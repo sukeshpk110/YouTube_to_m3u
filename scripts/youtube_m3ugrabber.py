@@ -3,7 +3,7 @@ import subprocess
 
 def grab(url):
     try:
-        cmd = ["yt-dlp", "-f", "95/94/93/b", "-g", url]
+        cmd = ["yt-dlp", "--cookies", "../cookies.txt", "-f", "95/94/93/b", "-g", url]
         result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
         for line in result.stdout.splitlines():
             clean = line.strip()
