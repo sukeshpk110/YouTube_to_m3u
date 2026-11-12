@@ -5,10 +5,11 @@ def grab(url):
     try:
         cmd = ["yt-dlp", "-f", "95/94/93/b", "-g", url]
         result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
-        links = [line.strip() for line in result.stdout.splitlines() if line.strip()]
-        if links:
-            print(links[0])
-            return
+        for line in result.stdout.splitlines():
+            clean = line.strip()
+            if clean.startswith("http"):
+                print(clean)
+                return
     except Exception:
         pass
     print("https://githubusercontent.com")
@@ -20,11 +21,10 @@ with open('../youtube_channel_info.txt') as f:
         if not line or line.startswith('~~'):
             continue
         if not line.startswith('https:'):
-            parts = line.split('|')
-            ch_name = parts[0].strip()
-            grp_title = parts[1].strip().title() if len(parts) > 1 else "News"
-            tvg_logo = parts[2].strip() if len(parts) > 2 else ""
-            tvg_id = parts[3].strip() if len(parts) > 3 else ""
+            parts = (line + "|||").split('|')
+            ch_name, grp_title, tvg_logo, tvg_id = parts.pop(0).strip(), parts.pop(0).strip().title(), parts.pop(0).strip(), parts.pop(0).strip()
+            if not grp_title:
+                grp_title = "News"
             print(f'\n#EXTINF:-1 group-title="{grp_title}" tvg-logo="{tvg_logo}" tvg-id="{tvg_id}", {ch_name}')
         else:
             grab(line)
