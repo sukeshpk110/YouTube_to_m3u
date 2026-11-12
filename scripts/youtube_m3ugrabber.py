@@ -2,17 +2,15 @@
 import subprocess
 
 def grab(url):
-    try:
-        cmd = ["yt-dlp", "--cookies", "../cookies.txt", "-f", "95/94/93/b", "-g", url]
-        result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
-        for line in result.stdout.splitlines():
-            clean = line.strip()
-            if clean.startswith("http"):
-                print(clean)
-                return
-    except Exception:
-        pass
-    print("https://githubusercontent.com")
+    cmd = ["yt-dlp", "--cookies", "../cookies.txt", "-f", "95/94/93/b/best", "-g", url]
+    result = subprocess.run(cmd, capture_output=True, text=True, timeout=45)
+    for line in result.stdout.splitlines():
+        clean = line.strip()
+        if clean.startswith("http"):
+            print(clean)
+            return
+    err = result.stderr.strip().replace("\n", " | ")
+    print(f"# ERROR: {err}")
 
 print('#EXTM3U')
 with open('../youtube_channel_info.txt') as f:
