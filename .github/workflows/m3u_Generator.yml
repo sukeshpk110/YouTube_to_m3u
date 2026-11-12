@@ -14,15 +14,13 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - name: Install yt-dlp and Deno
-        run: |
-          pip install -U yt-dlp
-          curl -fsSL https://deno.land | sh
-          echo "$HOME/.deno/bin" >> $GITHUB_PATH
+      - name: Set up Deno
+        uses: denoland/setup-deno@v2
+      - name: Install yt-dlp
+        run: pip install -U yt-dlp
       - name: Run script
         run: |
           cd scripts
-          chmod +x youtube_m3ugrabber.py
           python3 youtube_m3ugrabber.py > ../youtube.m3u
       - name: Commit and push changes
         run: |
