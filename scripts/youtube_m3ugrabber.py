@@ -1,6 +1,5 @@
 #! /usr/bin/python3
 import subprocess
-import sys
 
 def grab(url):
     try:
@@ -12,7 +11,7 @@ def grab(url):
             return
     except Exception:
         pass
-    print("https://raw.githubusercontent.com/benmoose39/YouTube_to_m3u/main/assets/moose_na.m3u")
+    print("https://githubusercontent.com")
 
 print('#EXTM3U')
 with open('../youtube_channel_info.txt') as f:
