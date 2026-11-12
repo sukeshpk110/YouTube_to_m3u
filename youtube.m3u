@@ -1,4 +1,4 @@
 #EXTM3U
 
 #EXTINF:-1 group-title="Malayalam News" tvg-logo="" tvg-id="", Keralavision News 24x7
-https://githubusercontent.com
+# ERROR: WARNING: [youtube] [jsc] Remote components challenge solver script (deno) and NPM package (deno) were skipped. These may be required to solve JS challenges. You can enable these downloads with  --remote-components ejs:github  (recommended) or  --remote-components ejs:npm , respectively. For more information and alternatives, refer to  https://github.com/yt-dlp/yt-dlp/wiki/EJS | WARNING: [youtube] 3446A6FzW3o: n challenge solving failed: Some formats may be missing. Ensure you have a supported JavaScript runtime and challenge solver script distribution installed. Review any warnings presented before this message. For more details, refer to  https://github.com/yt-dlp/yt-dlp/wiki/EJS | ERROR: [youtube] 3446A6FzW3o: No video formats found!; please report this issue on  https://github.com/yt-dlp/yt-dlp/issues?q= , filling out the appropriate issue template. Confirm you are on the latest version using  yt-dlp -U
