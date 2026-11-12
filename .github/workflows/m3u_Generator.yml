@@ -19,9 +19,13 @@ jobs:
       - name: Install yt-dlp
         run: pip install -U yt-dlp
       - name: Run script
+        env:
+          YT_COOKIES: ${{ secrets.YT_COOKIES }}
         run: |
+          printf "%s" "$YT_COOKIES" > cookies.txt
           cd scripts
           python3 youtube_m3ugrabber.py > ../youtube.m3u
+          rm -f ../cookies.txt
       - name: Commit and push changes
         run: |
           git config user.name "actions-user"
