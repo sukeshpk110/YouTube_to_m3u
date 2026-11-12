@@ -1,53 +1,33 @@
-# This is a basic workflow to help you get started with Actions
-
 name: M3U generator
 
-# Controls when the action will run. 
 on:
   schedule:
-    - cron: '0 0/3 * * *'
-
-  pull_request:
-    branches:
-      - main
-
-  # Allows you to run this workflow manually from the Actions tab
+    - cron: '0 */4 * * *'
   workflow_dispatch:
 
-# A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
-  # This workflow contains a single job called "build"
   build:
-    # The type of runner that the job will run on
     runs-on: ubuntu-latest
-
-    # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
-      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-      - uses: actions/checkout@v2
-
-      # Runs a single command using the runners shell
-      #- name: Run a one-line script
-      #  run: echo testing!
-
-      # Runs a set of commands using the runners shell 
-      - name: config
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install yt-dlp and Deno
         run: |
-          git config --global user.email "action@github.com"
-          git config --global user.name "GitHub Action"
-
-      - name: Main
+          pip install -U yt-dlp
+          curl -fsSL https://deno.land | sh
+          echo "$HOME/.deno/bin" >> $GITHUB_PATH
+      - name: Run script
         run: |
-          pwd
-          chmod +x autorun.sh
-          ./autorun.sh
-
-      - name: git add
+          cd scripts
+          chmod +x youtube_m3ugrabber.py
+          python3 youtube_m3ugrabber.py > ../youtube.m3u
+      - name: Commit and push changes
         run: |
-          git add -A
-          ls -la
-
-      - name: commit & push
-        run: |
-          git commit -m "links are updated"
-          git push -f
+          git config user.name "actions-user"
+          git config user.email "actions@github.com"
+          git add youtube.m3u
+          git diff --quiet && git diff --staged --quiet || git commit -m "Update M3U links"
+          git push
