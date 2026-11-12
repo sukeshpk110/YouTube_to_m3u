@@ -2,7 +2,7 @@
 import subprocess
 
 def grab(url):
-    cmd = ["yt-dlp", "--cookies", "../cookies.txt", "-f", "95/94/93/b/best", "-g", url]
+    cmd = ["yt-dlp", "--remote-components", "ejs:github", "--cookies", "../cookies.txt", "-f", "95/94/93/b/best", "-g", url]
     result = subprocess.run(cmd, capture_output=True, text=True, timeout=45)
     for line in result.stdout.splitlines():
         clean = line.strip()
