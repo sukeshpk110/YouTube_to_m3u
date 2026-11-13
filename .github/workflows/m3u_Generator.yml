@@ -3,14 +3,13 @@ name: M3U generator
 on:
   workflow_dispatch:
   schedule:
-    - cron: '0 */6 * * *' # Runs automatically every 6 hours
+    - cron: '0 */6 * * *'
 
 jobs:
   build:
     runs-on: ubuntu-latest
-
     permissions:
-      contents: write # Required to allow GitHub Actions to commit changes back to the repo
+      contents: write
 
     steps:
       - name: Checkout repository
@@ -27,7 +26,7 @@ jobs:
           pip install yt-dlp
 
       - name: Run M3U generator script
-  run: python scripts/youtube_m3ugrabber.py
+        run: python scripts/youtube_m3ugrabber.py
 
       - name: Commit and push updated M3U files
         run: |
