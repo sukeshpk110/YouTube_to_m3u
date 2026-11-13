@@ -4,18 +4,21 @@ from yt_dlp import YoutubeDL
 def get_live_stream_url(youtube_url):
     ydl_opts = {
         'format': 'best',
-        'quiet': True,
+        'quiet': False,
         'skip_download': True,
         'playlist_items': '1',
-        'socket_timeout': 15,
+        'socket_timeout': 20,
     }
     try:
         with YoutubeDL(ydl_opts) as ydl:
+            print(f"Extracting info for: {youtube_url}")
             info = ydl.extract_info(youtube_url, download=False)
             if 'entries' in info and info['entries']:
                 entry = info['entries'][0]
                 info = ydl.extract_info(entry['url'], download=False)
-            return info.get('url')
+            url = info.get('url')
+            print(f"Extracted URL: {url}")
+            return url
     except Exception as e:
         print(f"Error extracting stream for {youtube_url}: {e}")
         return None
@@ -29,6 +32,7 @@ channels = {
 }
 
 for name, data in channels.items():
+    print(f"Processing {name}...")
     stream_url = get_live_stream_url(data["url"])
     if stream_url:
         content = f"""#EXTM3U
@@ -38,6 +42,6 @@ for name, data in channels.items():
         os.makedirs(os.path.dirname(data["file"]), exist_ok=True)
         with open(data["file"], 'w', encoding='utf-8') as f:
             f.write(content)
-        print(f"Successfully updated {name}")
+        print(f"Successfully wrote {data['file']}")
     else:
-        print(f"Failed to fetch valid stream URL for {name}")
+        print(f"Skipping {name} due to extraction failure.")
