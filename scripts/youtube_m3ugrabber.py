@@ -1,7 +1,32 @@
 import os
+import urllib.request
+import xml.etree.ElementTree as ET
 from yt_dlp import YoutubeDL
 
-def get_live_stream_url(search_query):
+def get_latest_video_url_from_rss(channel_id):
+    rss_url = f"https://www.youtube.com/feeds/videos.xml?channel_id={channel_id}"
+    try:
+        req = urllib.request.Request(
+            rss_url,
+            headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
+        )
+        with urllib.request.urlopen(req) as response:
+            xml_data = response.read()
+        
+        root = ET.fromstring(xml_data)
+        ns = {'yt': 'http://www.youtube.com/xml/schemas/2015', 'atom': 'http://www.w3.org/2005/Atom'}
+        
+        entry = root.find('atom:entry', ns)
+        if entry is not None:
+            video_id_elem = entry.find('yt:videoId', ns)
+            if video_id_elem is not None:
+                video_id = video_id_elem.text
+                return f"https://www.youtube.com/watch?v={video_id}"
+    except Exception as e:
+        print(f"Error fetching RSS feed: {e}")
+    return None
+
+def get_live_stream_url(watch_url):
     ydl_opts = {
         'format': 'best',
         'quiet': True,
@@ -15,27 +40,16 @@ def get_live_stream_url(search_query):
     }
     try:
         with YoutubeDL(ydl_opts) as ydl:
-            print(f"Searching for: {search_query}")
-            info = ydl.extract_info(search_query, download=False)
-            if 'entries' in info and info['entries']:
-                for entry in info['entries']:
-                    video_url = entry.get('url') or f"https://www.youtube.com/watch?v={entry.get('id')}"
-                    print(f"Checking video URL: {video_url}")
-                    try:
-                        sub_info = ydl.extract_info(video_url, download=False)
-                        stream_url = sub_info.get('url')
-                        if stream_url:
-                            return stream_url
-                    except Exception:
-                        continue
-            return None
+            print(f"Extracting stream for: {watch_url}")
+            info = ydl.extract_info(watch_url, download=False)
+            return info.get('url')
     except Exception as e:
-        print(f"Error extracting stream for {search_query}: {e}")
+        print(f"Error extracting stream: {e}")
         return None
 
 channels = {
     "Kannur Vision News 24x7": {
-        "query": "ytsearch3:Kannur Vision News",
+        "channel_id": "UCgVnHatRH3_QCSoQO-bgh9w",
         "file": "channels/kannur_vision_news_24x7.m3u",
         "group": "Malayalam News"
     }
@@ -43,7 +57,12 @@ channels = {
 
 for name, data in channels.items():
     print(f"Processing {name}...")
-    stream_url = get_live_stream_url(data["query"])
+    watch_url = get_latest_video_url_from_rss(data["channel_id"])
+    if not watch_url:
+        print(f"Failed to get video URL from RSS for {name}")
+        continue
+        
+    stream_url = get_live_stream_url(watch_url)
     if stream_url:
         content = f"""#EXTM3U
 #EXTINF:-1 group-title="{data['group']}" tvg-logo="" tvg-id="", {name}
