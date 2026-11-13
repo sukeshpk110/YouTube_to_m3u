@@ -7,22 +7,35 @@ def get_live_stream_url(search_query):
         'quiet': True,
         'skip_download': True,
         'socket_timeout': 15,
+        'extractor_args': {
+            'youtube': {
+                'player_client': ['android', 'ios']
+            }
+        }
     }
     try:
         with YoutubeDL(ydl_opts) as ydl:
             print(f"Searching for: {search_query}")
             info = ydl.extract_info(search_query, download=False)
             if 'entries' in info and info['entries']:
-                entry = info['entries'][0]
-                info = ydl.extract_info(entry['url'], download=False)
-            return info.get('url')
+                for entry in info['entries']:
+                    video_url = entry.get('url') or f"https://www.youtube.com/watch?v={entry.get('id')}"
+                    print(f"Checking video URL: {video_url}")
+                    try:
+                        sub_info = ydl.extract_info(video_url, download=False)
+                        stream_url = sub_info.get('url')
+                        if stream_url:
+                            return stream_url
+                    except Exception:
+                        continue
+            return None
     except Exception as e:
         print(f"Error extracting stream for {search_query}: {e}")
         return None
 
 channels = {
     "Kannur Vision News 24x7": {
-        "query": "ytsearch1:Kannur Vision News live",
+        "query": "ytsearch3:Kannur Vision News",
         "file": "channels/kannur_vision_news_24x7.m3u",
         "group": "Malayalam News"
     }
