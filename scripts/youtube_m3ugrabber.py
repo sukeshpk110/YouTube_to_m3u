@@ -1,31 +1,41 @@
 import os
-import subprocess
+from yt_dlp import YoutubeDL
 
-def get_live_stream_url(youtube_url):
-    cmd = [
-        "yt-dlp",
-        "--js-runtimes", "node",
-        "--extractor-args", "youtube:player_client=android,ios",
-        "--format", "best",
-        "--get-url",
-        "--skip-download",
-        "--socket-timeout", "20",
-        youtube_url
-    ]
+def get_live_stream_url(query):
+    ydl_opts = {
+        'format': 'best',
+        'quiet': False,
+        'skip_download': True,
+        'socket_timeout': 20,
+        'extractor_args': {
+            'youtube': {
+                'player_client': ['android', 'ios']
+            }
+        }
+    }
     try:
-        print(f"Running command for: {youtube_url}")
-        result = subprocess.run(cmd, capture_output=True, text=True, check=True)
-        url = result.stdout.strip().splitlines()
-        if url:
-            return url[0]
-    except subprocess.CalledProcessError as e:
-        print(f"yt-dlp error: {e.stderr}")
+        with YoutubeDL(ydl_opts) as ydl:
+            print(f"Searching for: {query}")
+            info = ydl.extract_info(query, download=False)
+            if 'entries' in info and info['entries']:
+                for entry in info['entries']:
+                    vid_url = entry.get('url') or f"https://www.youtube.com/watch?v={entry.get('id')}"
+                    print(f"Checking video: {vid_url}")
+                    try:
+                        sub_info = ydl.extract_info(vid_url, download=False)
+                        s_url = sub_info.get('url')
+                        if s_url:
+                            return s_url
+                    except Exception as sub_e:
+                        print(f"Skipping video due to: {sub_e}")
+                        continue
+    except Exception as e:
+        print(f"Extraction error: {e}")
     return None
 
-# Channel configuration
 channels = {
     "Kannur Vision News 24x7": {
-        "url": "https://www.youtube.com/@KannurVisionNews/live",
+        "query": "ytsearch3:Kannur Vision News live",
         "file": "channels/kannur_vision_news_24x7.m3u",
         "group": "Malayalam News"
     }
@@ -33,15 +43,23 @@ channels = {
 
 for name, data in channels.items():
     print(f"Processing {name}...")
-    stream_url = get_live_stream_url(data["url"])
+    stream_url = get_live_stream_url(data["query"])
+    
+    os.makedirs(os.path.dirname(data["file"]), exist_ok=True)
     if stream_url:
         content = f"""#EXTM3U
 #EXTINF:-1 group-title="{data['group']}" tvg-logo="" tvg-id="", {name}
 {stream_url}
 """
-        os.makedirs(os.path.dirname(data["file"]), exist_ok=True)
         with open(data["file"], 'w', encoding='utf-8') as f:
             f.write(content)
         print(f"Successfully updated {data['file']}")
     else:
-        print(f"Failed to fetch valid stream URL for {name}")
+        # Writes an explicit error marker into the file so you know it executed
+        content = f"""#EXTM3U
+#EXTINF:-1 group-title="{data['group']}" tvg-logo="" tvg-id="", {name}
+# ERROR: EXTRACTION FAILED OR CHANNEL OFFLINE
+"""
+        with open(data["file"], 'w', encoding='utf-8') as f:
+            f.write(content)
+        print(f"Wrote failure marker for {name}")
