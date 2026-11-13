@@ -1,35 +1,38 @@
 name: M3U generator
 
 on:
-  schedule:
-    - cron: '0 */4 * * *'
   workflow_dispatch:
+  schedule:
+    - cron: '0 */6 * * *' # Runs automatically every 6 hours
 
 jobs:
   build:
     runs-on: ubuntu-latest
+
+    permissions:
+      contents: write # Required to allow GitHub Actions to commit changes back to the repo
+
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
-      - name: Set up Deno
-        uses: denoland/setup-deno@v2
-      - name: Install yt-dlp
-        run: pip install -U yt-dlp
-      - name: Run script
-        env:
-          YT_COOKIES: ${{ secrets.YT_COOKIES }}
+          python-version: '3.10'
+
+      - name: Install dependencies
         run: |
-          printf "%s" "$YT_COOKIES" > cookies.txt
-          cd scripts
-          python3 youtube_m3ugrabber.py > ../youtube.m3u
-          rm -f ../cookies.txt
-      - name: Commit and push changes
+          python -m pip install --upgrade pip
+          pip install yt-dlp
+
+      - name: Run M3U generator script
+        run: python scripts/generator.py
+
+      - name: Commit and push updated M3U files
         run: |
-          git config user.name "actions-user"
-          git config user.email "actions@github.com"
-          git add youtube.m3u channels/
-          git diff --quiet && git diff --staged --quiet || git commit -m "Update M3U links"
+          git config --global user.name "actions-user"
+          git config --global user.email "actions@github.com"
+          git add channels/
+          git commit -m "Update M3U links via yt-dlp" || echo "No changes to commit"
           git push
