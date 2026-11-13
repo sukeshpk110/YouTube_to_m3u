@@ -1,7 +1,7 @@
 import os
 from yt_dlp import YoutubeDL
 
-def get_live_stream_url(url):
+def get_live_stream_url(query):
     ydl_opts = {
         'format': 'best',
         'quiet': False,
@@ -15,8 +15,8 @@ def get_live_stream_url(url):
     }
     try:
         with YoutubeDL(ydl_opts) as ydl:
-            print(f"Extracting for: {url}")
-            info = ydl.extract_info(url, download=False)
+            print(f"Searching for: {query}")
+            info = ydl.extract_info(query, download=False)
             if 'entries' in info and info['entries']:
                 entry = info['entries'][0]
                 vid_url = entry.get('url') or f"https://www.youtube.com/watch?v={entry.get('id')}"
@@ -30,7 +30,7 @@ def get_live_stream_url(url):
 
 channels = {
     "Kannur Vision News 24x7": {
-        "url": "https://www.youtube.com/channel/UCgVnHatRH3_QCSoQO-bgh9w/live",
+        "query": "ytsearch1:Kannur Vision 24X7 LIVE",
         "file": "channels/kannur_vision_news_24x7.m3u",
         "group": "Malayalam News"
     }
@@ -38,7 +38,7 @@ channels = {
 
 for name, data in channels.items():
     print(f"Processing {name}...")
-    stream_url = get_live_stream_url(data["url"])
+    stream_url = get_live_stream_url(data["query"])
     
     os.makedirs(os.path.dirname(data["file"]), exist_ok=True)
     if stream_url:
