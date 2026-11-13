@@ -20,7 +20,6 @@ def get_live_stream_url(youtube_url):
         print(f"Error extracting stream for {youtube_url}: {e}")
         return None
 
-# Channel configuration
 channels = {
     "Kannur Vision News 24x7": {
         "url": "https://www.youtube.com/@KannurVisionNews/live",
