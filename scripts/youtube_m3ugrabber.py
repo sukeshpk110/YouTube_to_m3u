@@ -4,9 +4,9 @@ from yt_dlp import YoutubeDL
 def get_live_stream_url(query):
     ydl_opts = {
         'format': 'best',
-        'quiet': False,
+        'quiet': True,
         'skip_download': True,
-        'socket_timeout': 20,
+        'socket_timeout': 15,
         'extractor_args': {
             'youtube': {
                 'player_client': ['android', 'ios']
@@ -15,18 +15,14 @@ def get_live_stream_url(query):
     }
     try:
         with YoutubeDL(ydl_opts) as ydl:
-            print(f"Extracting for: {query}")
+            print(f"Searching for: {query}")
             info = ydl.extract_info(query, download=False)
             if 'entries' in info and info['entries']:
-                for entry in info['entries']:
-                    vid_url = entry.get('url') or f"https://www.youtube.com/watch?v={entry.get('id')}"
-                    try:
-                        sub_info = ydl.extract_info(vid_url, download=False)
-                        s_url = sub_info.get('url')
-                        if s_url:
-                            return s_url
-                    except Exception:
-                        continue
+                entry = info['entries'][0]
+                vid_url = entry.get('url') or f"https://www.youtube.com/watch?v={entry.get('id')}"
+                print(f"Extracting stream from: {vid_url}")
+                sub_info = ydl.extract_info(vid_url, download=False)
+                return sub_info.get('url')
             elif 'url' in info:
                 return info.get('url')
     except Exception as e:
@@ -35,7 +31,7 @@ def get_live_stream_url(query):
 
 channels = {
     "Kannur Vision News 24x7": {
-        "query": "https://www.youtube.com/@KannurVisionOnlinenews/streams",
+        "query": "ytsearch1:Kannur Vision Online live",
         "file": "channels/kannur_vision_news_24x7.m3u",
         "group": "Malayalam News"
     }
@@ -59,6 +55,6 @@ for name, data in channels.items():
 #EXTINF:-1 group-title="{data['group']}" tvg-logo="" tvg-id="", {name}
 # ERROR: EXTRACTION FAILED OR CHANNEL OFFLINE
 """
-        with open(data["file"], 'w', encoding='utf-8'] as f:
+        with open(data["file"], 'w', encoding='utf-8') as f:
             f.write(content)
         print(f"Wrote failure marker for {name}")
