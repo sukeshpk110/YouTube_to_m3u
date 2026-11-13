@@ -15,27 +15,27 @@ def get_live_stream_url(query):
     }
     try:
         with YoutubeDL(ydl_opts) as ydl:
-            print(f"Searching for: {query}")
+            print(f"Extracting for: {query}")
             info = ydl.extract_info(query, download=False)
             if 'entries' in info and info['entries']:
                 for entry in info['entries']:
                     vid_url = entry.get('url') or f"https://www.youtube.com/watch?v={entry.get('id')}"
-                    print(f"Checking video: {vid_url}")
                     try:
                         sub_info = ydl.extract_info(vid_url, download=False)
                         s_url = sub_info.get('url')
                         if s_url:
                             return s_url
-                    except Exception as sub_e:
-                        print(f"Skipping video due to: {sub_e}")
+                    except Exception:
                         continue
+            elif 'url' in info:
+                return info.get('url')
     except Exception as e:
         print(f"Extraction error: {e}")
     return None
 
 channels = {
     "Kannur Vision News 24x7": {
-        "query": "ytsearch3:Kannur Vision News live",
+        "query": "https://www.youtube.com/@KannurVisionOnlinenews/streams",
         "file": "channels/kannur_vision_news_24x7.m3u",
         "group": "Malayalam News"
     }
@@ -55,11 +55,10 @@ for name, data in channels.items():
             f.write(content)
         print(f"Successfully updated {data['file']}")
     else:
-        # Writes an explicit error marker into the file so you know it executed
         content = f"""#EXTM3U
 #EXTINF:-1 group-title="{data['group']}" tvg-logo="" tvg-id="", {name}
 # ERROR: EXTRACTION FAILED OR CHANNEL OFFLINE
 """
-        with open(data["file"], 'w', encoding='utf-8') as f:
+        with open(data["file"], 'w', encoding='utf-8'] as f:
             f.write(content)
         print(f"Wrote failure marker for {name}")
