@@ -4,25 +4,23 @@ from yt_dlp import YoutubeDL
 def get_live_stream_url(youtube_url):
     ydl_opts = {
         'format': 'best',
-        'quiet': False,
+        'quiet': True,
         'skip_download': True,
         'playlist_items': '1',
-        'socket_timeout': 20,
+        'socket_timeout': 15,
     }
     try:
         with YoutubeDL(ydl_opts) as ydl:
-            print(f"Extracting info for: {youtube_url}")
             info = ydl.extract_info(youtube_url, download=False)
             if 'entries' in info and info['entries']:
                 entry = info['entries'][0]
                 info = ydl.extract_info(entry['url'], download=False)
-            url = info.get('url')
-            print(f"Extracted URL: {url}")
-            return url
+            return info.get('url')
     except Exception as e:
         print(f"Error extracting stream for {youtube_url}: {e}")
         return None
 
+# Define your channels here
 channels = {
     "Kannur Vision News 24x7": {
         "url": "https://www.youtube.com/@KannurVisionNews/live",
@@ -42,6 +40,6 @@ for name, data in channels.items():
         os.makedirs(os.path.dirname(data["file"]), exist_ok=True)
         with open(data["file"], 'w', encoding='utf-8') as f:
             f.write(content)
-        print(f"Successfully wrote {data['file']}")
+        print(f"Successfully updated {data['file']}")
     else:
-        print(f"Skipping {name} due to extraction failure.")
+        print(f"Failed to fetch valid stream URL for {name}")
