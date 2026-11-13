@@ -27,7 +27,7 @@ jobs:
           pip install yt-dlp
 
       - name: Run M3U generator script
-        run: python scripts/generator.py
+  run: python scripts/youtube_m3ugrabber.py
 
       - name: Commit and push updated M3U files
         run: |
