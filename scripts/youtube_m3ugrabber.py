@@ -5,30 +5,50 @@ from yt_dlp import YoutubeDL
 
 def process_channel(item):
     name, data = item
-    query = f"ytsearch1:{data['query']}"
+    raw_query = data['query']
+    
+    if raw_query.startswith("http"):
+        query = raw_query
+    elif raw_query.startswith("UC"):
+        query = f"https://www.youtube.com/channel/{raw_query}/live"
+    elif raw_query.startswith("@"):
+        query = f"https://www.youtube.com/{raw_query}/live"
+    elif raw_query.startswith("ytsearch1:"):
+        query = raw_query
+    else:
+        query = f"ytsearch1:{raw_query} live"
+
     ydl_opts = {
         'format': 'best',
         'quiet': True,
         'no_warnings': True,
         'skip_download': True,
-        'socket_timeout': 8,
+        'socket_timeout': 12,
         'retries': 1,
+        'cookiefile': 'cookies.txt' if os.path.exists('cookies.txt') else None,
         'extractor_args': {
             'youtube': {
                 'player_client': ['android', 'ios']
             }
         }
     }
-
+    
     stream_url = None
     try:
         with YoutubeDL(ydl_opts) as ydl:
+            print(f"[{name}] Extracting from: {query}")
             info = ydl.extract_info(query, download=False)
             if 'entries' in info and info['entries']:
-                entry = info['entries'][0]
-                vid_url = entry.get('url') or f"https://www.youtube.com/watch?v={entry.get('id')}"
-                sub_info = ydl.extract_info(vid_url, download=False)
-                stream_url = sub_info.get('url')
+                for entry in info['entries']:
+                    vid_url = entry.get('url') or f"https://www.youtube.com/watch?v={entry.get('id')}"
+                    try:
+                        sub_info = ydl.extract_info(vid_url, download=False)
+                        s_url = sub_info.get('url')
+                        if s_url:
+                            stream_url = s_url
+                            break
+                    except Exception:
+                        continue
             elif 'url' in info:
                 stream_url = info.get('url')
     except Exception as e:
@@ -57,7 +77,7 @@ def main():
                     parts = [p.strip() for p in line.split("|")]
                     if len(parts) >= 2:
                         name = parts[0]
-                        query_term = parts[1].replace("ytsearch1:", "").strip()
+                        query_term = parts[1]
                         group = parts[2] if len(parts) > 2 else "Malayalam News"
                         slug = re.sub(r'[^a-z0-9]+', '_', name.lower()).strip('_')
                         channels[name] = {
@@ -66,9 +86,10 @@ def main():
                             "group": group
                         }
 
-    # Process all channels concurrently
     with ThreadPoolExecutor(max_workers=6) as executor:
         executor.map(process_channel, channels.items())
+
+    print("All channel playlists generated successfully!")
 
 if __name__ == "__main__":
     main()
