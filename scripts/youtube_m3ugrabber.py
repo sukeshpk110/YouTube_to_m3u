@@ -1,56 +1,45 @@
 import os
 from yt_dlp import YoutubeDL
 
-def get_live_stream_url():
-    channel_url = "https://www.youtube.com/@KannurVisionOnlinenews/streams"
+def get_stream_with_fallback():
     ydl_opts = {
-        'extract_flat': True,
+        'format': 'best',
         'quiet': False,
         'skip_download': True,
-        'socket_timeout': 20,
+        'socket_timeout': 15,
         'extractor_args': {
             'youtube': {
-                'player_client': ['android', 'ios', 'web']
+                'player_client': ['android', 'ios']
             }
         }
     }
+    
+    queries = [
+        "ytsearch1:Kannur Vision Online live",
+        "ytsearch1:Kannur Vision 24X7 LIVE",
+        "ytsearch1:Kannur Vision News"
+    ]
+    
     try:
         with YoutubeDL(ydl_opts) as ydl:
-            print(f"Fetching entries from {channel_url}")
-            info = ydl.extract_info(channel_url, download=False)
-            entries = info.get('entries', [])
-            
-            target_url = None
-            for entry in entries:
-                live_status = entry.get('live_status')
-                title = entry.get('title', '')
-                print(f"Checking video: {title} (status: {live_status})")
-                if live_status == 'is_live' or 'LIVE' in title.upper():
-                    target_url = entry.get('url') or f"https://www.youtube.com/watch?v={entry.get('id')}"
-                    break
-            
-            # Fallback to the first entry if no explicit live status is flagged
-            if not target_url and entries:
-                target_url = entries[0].get('url') or f"https://www.youtube.com/watch?v={entries[0].get('id')}"
-
-            if target_url:
-                print(f"Extracting playable stream URL from: {target_url}")
-                stream_opts = {
-                    'format': 'best',
-                    'quiet': False,
-                    'skip_download': True,
-                    'socket_timeout': 20,
-                    'extractor_args': {
-                        'youtube': {
-                            'player_client': ['android', 'ios', 'web']
-                        }
-                    }
-                }
-                with YoutubeDL(stream_opts) as sydl:
-                    s_info = sydl.extract_info(target_url, download=False)
-                    return s_info.get('url')
+            for q in queries:
+                print(f"Trying query: {q}")
+                try:
+                    info = ydl.extract_info(q, download=False)
+                    if 'entries' in info and info['entries']:
+                        entry = info['entries'][0]
+                        vid_url = entry.get('url') or f"https://www.youtube.com/watch?v={entry.get('id')}"
+                        sub_info = ydl.extract_info(vid_url, download=False)
+                        s_url = sub_info.get('url')
+                        if s_url:
+                            print(f"Successfully extracted stream using: {q}")
+                            return s_url
+                except Exception as query_e:
+                    print(f"Query '{q}' failed: {query_e}")
+                    continue
     except Exception as e:
-        print(f"Extraction error: {e}")
+        print(f"General extraction error: {e}")
+        
     return None
 
 channels = {
@@ -62,7 +51,7 @@ channels = {
 
 for name, data in channels.items():
     print(f"Processing {name}...")
-    stream_url = get_live_stream_url()
+    stream_url = get_stream_with_fallback()
     
     os.makedirs(os.path.dirname(data["file"]), exist_ok=True)
     if stream_url:
