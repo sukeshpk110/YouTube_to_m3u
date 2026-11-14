@@ -1,20 +1,4 @@
 ~~ DO NOT EDIT THE FIRST 2 LINES
 ~~ FORMAT: <channel name> | <group name> | <logo> | <tvg-id>
 
-Keralavision News 24x7 | Malayalam News | |
-https://www.youtube.com/@keralavisionnews24x7/live
-
-Kannur Vision News 24x7 | Malayalam News | |
-https://www.youtube.com/watch?v=ldYhjkWYNDE
-
-24 News | Malayalam News | |
-https://www.youtube.com/@24OnLive/live
-
-Amrita  News | Malayalam News | |
-https://www.youtube.com/watch?v=4Ng7A95vHT0
-
-News 18 Keralam | Malayalam News | |
-https://www.youtube.com/@News18Kerala/live
-
-Big TV Malayalam | Malayalam News | |
-https://www.youtube.com/@bigtv24x7live/streams
+Kannur Vision News 24x7 | ytsearch1:Kannur Vision Online live | Malayalam News
