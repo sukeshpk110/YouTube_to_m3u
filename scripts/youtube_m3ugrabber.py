@@ -1,30 +1,6 @@
 import os
 import re
-import urllib.request
-import xml.etree.ElementTree as ET
 from yt_dlp import YoutubeDL
-
-def get_latest_video_from_rss(channel_id):
-    rss_url = f"https://www.youtube.com/feeds/videos.xml?channel_id={channel_id}"
-    try:
-        req = urllib.request.Request(
-            rss_url,
-            headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
-        )
-        with urllib.request.urlopen(req) as response:
-            xml_data = response.read()
-        
-        root = ET.fromstring(xml_data)
-        ns = {'yt': 'http://www.youtube.com/xml/schemas/2015', 'atom': 'http://www.w3.org/2005/Atom'}
-        
-        entry = root.find('atom:entry', ns)
-        if entry is not None:
-            video_id_elem = entry.find('yt:videoId', ns)
-            if video_id_elem is not None:
-                return f"https://www.youtube.com/watch?v={video_id_elem.text}"
-    except Exception as e:
-        print(f"RSS error for {channel_id}: {e}")
-    return None
 
 def get_stream_url(watch_url):
     ydl_opts = {
@@ -40,11 +16,19 @@ def get_stream_url(watch_url):
     }
     try:
         with YoutubeDL(ydl_opts) as ydl:
-            print(f"Extracting stream from: {watch_url}")
+            print(f"Extracting live stream from: {watch_url}")
             info = ydl.extract_info(watch_url, download=False)
+            
+            # If it's a playlist/channel container, grab the first active entry
+            if 'entries' in info and info['entries']:
+                entry = info['entries'][0]
+                vid_url = entry.get('url') or f"https://www.youtube.com/watch?v={entry.get('id')}"
+                sub_info = ydl.extract_info(vid_url, download=False)
+                return sub_info.get('url')
+            
             return info.get('url')
     except Exception as e:
-        print(f"Extraction error: {e}")
+        print(f"Extraction error for {watch_url}: {e}")
     return None
 
 config_path = "youtube_channel_info.txt"
@@ -60,7 +44,7 @@ if os.path.exists(config_path):
                     name = parts[0]
                     identifier = parts[1]
                     group = parts[2] if len(parts) > 2 else "Malayalam News"
-                    # Generate clean uniform filename slug
+                    
                     slug = re.sub(r'[^a-z0-9]+', '_', name.lower()).strip('_')
                     channels[name] = {
                         "identifier": identifier,
@@ -72,19 +56,17 @@ for name, data in channels.items():
     print(f"Processing channel: {name}...")
     identifier = data["identifier"]
     
-    watch_url = None
-    if identifier.startswith("UC"):
-        watch_url = get_latest_video_from_rss(identifier)
-    elif identifier.startswith("http"):
-        watch_url = identifier
+    # Construct direct live URL
+    if identifier.startswith("http"):
+        watch_url = identifier if identifier.endswith("/live") else f"{identifier.rstrip('/')}/live"
+    elif identifier.startswith("UC"):
+        watch_url = f"https://www.youtube.com/channel/{identifier}/live"
     elif identifier.startswith("@"):
         watch_url = f"https://www.youtube.com/{identifier}/live"
     else:
         watch_url = f"https://www.youtube.com/@{identifier}/live"
         
-    stream_url = None
-    if watch_url:
-        stream_url = get_stream_url(watch_url)
+    stream_url = get_stream_url(watch_url)
         
     os.makedirs(os.path.dirname(data["file"]), exist_ok=True)
     if stream_url:
