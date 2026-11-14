@@ -1,4 +1,4 @@
 ~~ DO NOT EDIT THE FIRST 2 LINES
 ~~ FORMAT: <channel name> | <group name> | <logo> | <tvg-id>
-
-Kannur Vision News 24x7 | ytsearch1:Kannur Vision Online live | Malayalam News
+Kannur Vision News 24x7 | 
+https://www.youtube.com/@KannurVisionOnlinenews/live | Malayalam News
