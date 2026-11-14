@@ -27,10 +27,12 @@ jobs:
         run: pip install --upgrade "yt-dlp[default]"
 
       - name: Write cookies from secret
+        env:
+          YT_COOKIES: ${{ secrets.YT_COOKIES }}
         run: |
-          cat << 'EOF' > cookies.txt
-          ${{ secrets.YT_COOKIES }}
-          EOF
+          if [ -n "$YT_COOKIES" ]; then
+            printf '%s\n' "$YT_COOKIES" > cookies.txt
+          fi
 
       - name: Run M3U grabber
         run: python scripts/youtube_m3ugrabber.py
