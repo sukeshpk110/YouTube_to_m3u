@@ -18,6 +18,7 @@ def process_channel(item):
     else:
         query = f"ytsearch1:{raw_query} live"
 
+    has_cookies = os.path.exists('cookies.txt')
     ydl_opts = {
         'format': 'best',
         'quiet': True,
@@ -25,10 +26,10 @@ def process_channel(item):
         'skip_download': True,
         'socket_timeout': 12,
         'retries': 1,
-        'cookiefile': 'cookies.txt' if os.path.exists('cookies.txt') else None,
+        'cookiefile': 'cookies.txt' if has_cookies else None,
         'extractor_args': {
             'youtube': {
-                'player_client': ['android', 'ios']
+                'player_client': ['web', 'mweb'] if has_cookies else ['android', 'ios']
             }
         }
     }
