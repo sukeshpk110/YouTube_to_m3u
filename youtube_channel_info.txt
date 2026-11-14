@@ -1,9 +1,10 @@
 ~~ DO NOT EDIT THE FIRST 2 LINES
 ~~ FORMAT: <channel name> | <search query> | <group name>
 
-Kannur Vision News 24x7 | Kannur Vision News 24x7 live | Malayalam News
+Kannur Vision News 24x7 | KannurVisionOnlinenews | Malayalam News
 24 News | 24 News Malayalam live | Malayalam News
 Amrita News | Amrita News live | Malayalam News
-Big TV Malayalam | Big TV Malayalam live | Malayalam News
+Big TV Malayalam | BIGTV24X7 | Malayalam News
 Kerala Vision News 24x7 | Kerala Vision News 24x7 live | Malayalam News
 News18 Kerala | News18 Kerala live | Malayalam News
+                                          
