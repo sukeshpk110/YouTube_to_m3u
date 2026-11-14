@@ -2,7 +2,7 @@ import os
 import re
 from yt_dlp import YoutubeDL
 
-def get_stream_url(watch_url):
+def get_robust_stream_url(channel_name, identifier):
     ydl_opts = {
         'format': 'best',
         'quiet': False,
@@ -14,21 +14,51 @@ def get_stream_url(watch_url):
             }
         }
     }
+
+    # Build potential extraction targets to try in order
+    targets = []
+    # 1. Search query targeting active live broadcast
+    targets.append(f"ytsearch1:{channel_name} live")
+    
+    # 2. Direct URL or ID based targets
+    if identifier.startswith("http"):
+        targets.append(identifier if identifier.endswith("/live") else f"{identifier.rstrip('/')}/live")
+    elif identifier.startswith("UC"):
+        targets.append(f"https://www.youtube.com/channel/{identifier}/live")
+        targets.append(f"https://www.youtube.com/channel/{identifier}")
+    elif identifier.startswith("@"):
+        targets.append(f"https://www.youtube.com/{identifier}/live")
+        targets.append(f"https://www.youtube.com/{identifier}")
+    else:
+        targets.append(f"https://www.youtube.com/@{identifier}/live")
+
     try:
         with YoutubeDL(ydl_opts) as ydl:
-            print(f"Extracting live stream from: {watch_url}")
-            info = ydl.extract_info(watch_url, download=False)
-            
-            # If it's a playlist/channel container, grab the first active entry
-            if 'entries' in info and info['entries']:
-                entry = info['entries'][0]
-                vid_url = entry.get('url') or f"https://www.youtube.com/watch?v={entry.get('id')}"
-                sub_info = ydl.extract_info(vid_url, download=False)
-                return sub_info.get('url')
-            
-            return info.get('url')
+            for target in targets:
+                print(f"Trying target for {channel_name}: {target}")
+                try:
+                    info = ydl.extract_info(target, download=False)
+                    
+                    # Handle search results or playlist entries
+                    if 'entries' in info and info['entries']:
+                        for entry in info['entries']:
+                            vid_url = entry.get('url') or f"https://www.youtube.com/watch?v={entry.get('id')}"
+                            try:
+                                sub_info = ydl.extract_info(vid_url, download=False)
+                                s_url = sub_info.get('url')
+                                if s_url:
+                                    print(f"Successfully extracted stream for {channel_name}!")
+                                    return s_url
+                            except Exception:
+                                continue
+                    elif 'url' in info:
+                        return info.get('url')
+                except Exception as target_e:
+                    print(f"Target '{target}' failed: {target_e}")
+                    continue
     except Exception as e:
-        print(f"Extraction error for {watch_url}: {e}")
+        print(f"General extraction error for {channel_name}: {e}")
+        
     return None
 
 config_path = "youtube_channel_info.txt"
@@ -54,34 +84,6 @@ if os.path.exists(config_path):
 
 for name, data in channels.items():
     print(f"Processing channel: {name}...")
-    identifier = data["identifier"]
+    stream_url = get_robust_stream_url(name, data["identifier"])
     
-    # Construct direct live URL
-    if identifier.startswith("http"):
-        watch_url = identifier if identifier.endswith("/live") else f"{identifier.rstrip('/')}/live"
-    elif identifier.startswith("UC"):
-        watch_url = f"https://www.youtube.com/channel/{identifier}/live"
-    elif identifier.startswith("@"):
-        watch_url = f"https://www.youtube.com/{identifier}/live"
-    else:
-        watch_url = f"https://www.youtube.com/@{identifier}/live"
-        
-    stream_url = get_stream_url(watch_url)
-        
-    os.makedirs(os.path.dirname(data["file"]), exist_ok=True)
-    if stream_url:
-        content = f"""#EXTM3U
-#EXTINF:-1 group-title="{data['group']}" tvg-logo="" tvg-id="", {name}
-{stream_url}
-"""
-        with open(data["file"], 'w', encoding='utf-8') as f:
-            f.write(content)
-        print(f"Successfully updated {data['file']}")
-    else:
-        content = f"""#EXTM3U
-#EXTINF:-1 group-title="{data['group']}" tvg-logo="" tvg-id="", {name}
-# ERROR: EXTRACTION FAILED OR CHANNEL OFFLINE
-"""
-        with open(data["file"], 'w', encoding='utf-8') as f:
-            f.write(content)
-        print(f"Wrote failure marker for {name}")
+    os.makedirs(os.path.dirname(data["file"]), exist_
