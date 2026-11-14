@@ -1,43 +1,60 @@
 import os
 from yt_dlp import YoutubeDL
 
-def get_live_stream_url(query):
+def get_live_stream_url():
+    channel_url = "https://www.youtube.com/@KannurVisionOnlinenews/streams"
     ydl_opts = {
-        'format': 'best',
+        'extract_flat': True,
         'quiet': False,
         'skip_download': True,
         'socket_timeout': 20,
         'extractor_args': {
             'youtube': {
-                'player_client': ['android', 'ios']
+                'player_client': ['android', 'ios', 'web']
             }
         }
     }
     try:
         with YoutubeDL(ydl_opts) as ydl:
-            print(f"Searching for: {query}")
-            info = ydl.extract_info(query, download=False)
-            if 'entries' in info and info['entries']:
-                for entry in info['entries']:
-                    vid_url = entry.get('url') or f"https://www.youtube.com/watch?v={entry.get('id')}"
-                    print(f"Checking video URL: {vid_url}")
-                    try:
-                        sub_info = ydl.extract_info(vid_url, download=False)
-                        s_url = sub_info.get('url')
-                        if s_url:
-                            return s_url
-                    except Exception as sub_e:
-                        print(f"Sub-extraction failed: {sub_e}")
-                        continue
-            elif 'url' in info:
-                return info.get('url')
+            print(f"Fetching entries from {channel_url}")
+            info = ydl.extract_info(channel_url, download=False)
+            entries = info.get('entries', [])
+            
+            target_url = None
+            for entry in entries:
+                live_status = entry.get('live_status')
+                title = entry.get('title', '')
+                print(f"Checking video: {title} (status: {live_status})")
+                if live_status == 'is_live' or 'LIVE' in title.upper():
+                    target_url = entry.get('url') or f"https://www.youtube.com/watch?v={entry.get('id')}"
+                    break
+            
+            # Fallback to the first entry if no explicit live status is flagged
+            if not target_url and entries:
+                target_url = entries[0].get('url') or f"https://www.youtube.com/watch?v={entries[0].get('id')}"
+
+            if target_url:
+                print(f"Extracting playable stream URL from: {target_url}")
+                stream_opts = {
+                    'format': 'best',
+                    'quiet': False,
+                    'skip_download': True,
+                    'socket_timeout': 20,
+                    'extractor_args': {
+                        'youtube': {
+                            'player_client': ['android', 'ios', 'web']
+                        }
+                    }
+                }
+                with YoutubeDL(stream_opts) as sydl:
+                    s_info = sydl.extract_info(target_url, download=False)
+                    return s_info.get('url')
     except Exception as e:
         print(f"Extraction error: {e}")
     return None
 
 channels = {
     "Kannur Vision News 24x7": {
-        "query": "ytsearch1:Kannur Vision Online live",
         "file": "channels/kannur_vision_news_24x7.m3u",
         "group": "Malayalam News"
     }
@@ -45,7 +62,7 @@ channels = {
 
 for name, data in channels.items():
     print(f"Processing {name}...")
-    stream_url = get_live_stream_url(data["query"])
+    stream_url = get_live_stream_url()
     
     os.makedirs(os.path.dirname(data["file"]), exist_ok=True)
     if stream_url:
