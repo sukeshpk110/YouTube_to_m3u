@@ -2,3 +2,8 @@
 ~~ FORMAT: <channel name> | <channel ID or URL> | <group name>
 
 Kannur Vision News 24x7 | UCgVnHatRH3_QCSoQO-bgh9w | Malayalam News
+24 News | UCup3etEdjyF1L3sRbU-rKLw | Malayalam News
+Amrita News | @AmritaNews | Malayalam News
+Big TV Malayalam | UClFe5TPbW1MVrOPpbNHTDoQ | Malayalam News
+Kerala Vision News 24x7 | UCuo69XR8nCP4Ss8ko_5Xbuw | Malayalam News
+News18 Kerala | UC-mMi78WJST4N5o8_i1FoXw | Malayalam News
