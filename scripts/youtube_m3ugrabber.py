@@ -1,4 +1,5 @@
 import os
+import re
 import urllib.request
 import xml.etree.ElementTree as ET
 from yt_dlp import YoutubeDL
@@ -22,7 +23,7 @@ def get_latest_video_from_rss(channel_id):
             if video_id_elem is not None:
                 return f"https://www.youtube.com/watch?v={video_id_elem.text}"
     except Exception as e:
-        print(f"RSS error: {e}")
+        print(f"RSS error for {channel_id}: {e}")
     return None
 
 def get_stream_url(watch_url):
@@ -59,10 +60,11 @@ if os.path.exists(config_path):
                     name = parts[0]
                     identifier = parts[1]
                     group = parts[2] if len(parts) > 2 else "Malayalam News"
-                    filename = name.lower().replace(" ", "_") + ".m3u"
+                    # Generate clean uniform filename slug
+                    slug = re.sub(r'[^a-z0-9]+', '_', name.lower()).strip('_')
                     channels[name] = {
                         "identifier": identifier,
-                        "file": f"channels/{filename}",
+                        "file": f"channels/{slug}.m3u",
                         "group": group
                     }
 
@@ -75,8 +77,10 @@ for name, data in channels.items():
         watch_url = get_latest_video_from_rss(identifier)
     elif identifier.startswith("http"):
         watch_url = identifier
-    else:
+    elif identifier.startswith("@"):
         watch_url = f"https://www.youtube.com/{identifier}/live"
+    else:
+        watch_url = f"https://www.youtube.com/@{identifier}/live"
         
     stream_url = None
     if watch_url:
