@@ -28,7 +28,8 @@ jobs:
 
       - name: Run M3U generator script
         run: |
-          python scripts/main.py  # Update this filename if your main script is named differently inside the scripts folder
+          chmod +x autorun.sh
+          ./autorun.sh
 
       - name: Commit and push updated M3U
         run: |
