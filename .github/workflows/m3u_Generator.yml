@@ -24,7 +24,7 @@ jobs:
 
       - name: Create cookies.txt from Secret
         run: |
-          echo "${{ secrets.YOUTUBE_COOKIES }}" > cookies.txt
+          printf '%s\n' "${{ secrets.YOUTUBE_COOKIES }}" | tr -d '\r' > cookies.txt
 
       - name: Run M3U generator script
         run: |
