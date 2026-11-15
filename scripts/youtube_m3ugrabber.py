@@ -21,11 +21,12 @@ def process_channel(item):
     has_cookies = os.path.exists('cookies.txt')
     ydl_opts = {
         'format': 'best',
-        'quiet': True,
-        'no_warnings': True,
+        'quiet': False,
+        'verbose': True,
+        'no_warnings': False,
         'skip_download': True,
-        'socket_timeout': 12,
-        'retries': 1,
+        'socket_timeout': 15,
+        'retries': 3,
         'cookiefile': 'cookies.txt' if has_cookies else None,
         'extractor_args': {
             'youtube': {
