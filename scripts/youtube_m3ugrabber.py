@@ -5,28 +5,16 @@ from yt_dlp import YoutubeDL
 
 def process_channel(item):
     name, data = item
-    raw_query = data['query']
-    
-    if raw_query.startswith("http"):
-        query = raw_query
-    elif raw_query.startswith("UC"):
-        query = f"https://www.youtube.com/channel/{raw_query}/live"
-    elif raw_query.startswith("@"):
-        query = f"https://www.youtube.com/{raw_query}/live"
-    elif raw_query.startswith("ytsearch1:"):
-        query = raw_query
-    else:
-        query = f"ytsearch1:{raw_query} live"
+    # Use ytsearch1 to bypass cloud IP blocks on direct /live pages
+    query = f"ytsearch1:{name} live"
 
     has_cookies = os.path.exists('cookies.txt')
     ydl_opts = {
         'format': 'best',
         'quiet': False,
         'verbose': True,
-        'no_warnings': False,
         'skip_download': True,
         'socket_timeout': 15,
-        'retries': 3,
         'cookiefile': 'cookies.txt' if has_cookies else None,
         'extractor_args': {
             'youtube': {
@@ -38,21 +26,13 @@ def process_channel(item):
     stream_url = None
     try:
         with YoutubeDL(ydl_opts) as ydl:
-            print(f"[{name}] Extracting from: {query}")
+            print(f"[{name}] Searching: {query}")
             info = ydl.extract_info(query, download=False)
             if 'entries' in info and info['entries']:
-                for entry in info['entries']:
-                    vid_url = entry.get('url') or f"https://www.youtube.com/watch?v={entry.get('id')}"
-                    try:
-                        sub_info = ydl.extract_info(vid_url, download=False)
-                        s_url = sub_info.get('url')
-                        if s_url:
-                            stream_url = s_url
-                            break
-                    except Exception:
-                        continue
-            elif 'url' in info:
-                stream_url = info.get('url')
+                entry = info['entries'][0]
+                vid_url = entry.get('url') or f"https://www.youtube.com/watch?v={entry.get('id')}"
+                sub_info = ydl.extract_info(vid_url, download=False)
+                stream_url = sub_info.get('url')
     except Exception as e:
         print(f"[{name}] Failed: {e}")
 
@@ -77,13 +57,11 @@ def main():
                 line = line.strip()
                 if line and not line.startswith("~~") and not line.startswith("#"):
                     parts = [p.strip() for p in line.split("|")]
-                    if len(parts) >= 2:
+                    if len(parts) >= 1:
                         name = parts[0]
-                        query_term = parts[1]
                         group = parts[2] if len(parts) > 2 else "Malayalam News"
                         slug = re.sub(r'[^a-z0-9]+', '_', name.lower()).strip('_')
                         channels[name] = {
-                            "query": query_term,
                             "file": f"channels/{slug}.m3u",
                             "group": group
                         }
@@ -91,7 +69,6 @@ def main():
     with ThreadPoolExecutor(max_workers=6) as executor:
         executor.map(process_channel, channels.items())
 
-    # Combine all individual channel m3u files into a single root youtube.m3u file
     master_lines = ["#EXTM3U"]
     for name, data in channels.items():
         if os.path.exists(data["file"]):
