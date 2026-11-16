@@ -26,6 +26,7 @@ def get_live_url(youtube_url):
         cmd = [
             "yt-dlp",
             "-g",
+            "--cookies", "cookies.txt",
             "--extractor-args", "youtube:player_client=web_safari,ios",
             "-f", "best[protocol*=m3u8]/best/bestvideo+bestaudio",
             youtube_url,
