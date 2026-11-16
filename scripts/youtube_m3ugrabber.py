@@ -9,7 +9,6 @@ def process_channel(item):
 
     has_cookies = os.path.exists('cookies.txt')
     ydl_opts = {
-        'format': 'best',
         'quiet': False,
         'verbose': True,
         'skip_download': True,
