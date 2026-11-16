@@ -7,7 +7,6 @@ def process_channel(item):
     name, data = item
     raw_query = data['query']
     
-    # Construct direct live URL to bypass search extraction barriers
     if raw_query.startswith("http"):
         query = raw_query
     elif raw_query.startswith("@"):
@@ -28,20 +27,23 @@ def process_channel(item):
         'cookiefile': 'cookies.txt' if has_cookies and cookie_size > 0 else None,
         'extractor_args': {
             'youtube': {
-                'player_client': ['android', 'web']
+                'player_client': ['web', 'android']
             }
         }
     }
     
     stream_url = None
     error_reason = "EXTRACTION FAILED OR CHANNEL OFFLINE"
-    
-    try:
-        with YoutubeDL(ydl_opts) as ydl:
-            print(f"[{name}] Extracting direct live URL: {query}")
-            info = ydl.extract_info(query, download=False)
-            if info:
-                # Handle playlist/entries or direct info result
+    queries = [query, f"ytsearch1:{name} live"]
+
+    with YoutubeDL(ydl_opts) as ydl:
+        for q in queries:
+            try:
+                print(f"[{name}] Trying query/URL: {q}")
+                info = ydl.extract_info(q, download=False)
+                if not info:
+                    continue
+                
                 entry = info['entries'][0] if ('entries' in info and info['entries']) else info
                 stream_url = entry.get('url')
                 
@@ -60,9 +62,13 @@ def process_channel(item):
                         if f.get('url'):
                             stream_url = f.get('url')
                             break
-    except Exception as e:
-        error_reason = str(e)
-        print(f"[{name}] Failed: {e}")
+                            
+                if stream_url:
+                    break
+            except Exception as e:
+                error_reason = str(e)
+                print(f"[{name}] Failed with {q}: {e}")
+                continue
 
     os.makedirs(os.path.dirname(data["file"]), exist_ok=True)
     if stream_url:
