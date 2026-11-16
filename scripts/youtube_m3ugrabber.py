@@ -5,8 +5,7 @@ from yt_dlp import YoutubeDL
 
 def process_channel(item):
     name, data = item
-    # Use reliable search queries to bypass tab layout changes
-    query = f"ytsearch1:{name} live stream"
+    query = f"ytsearch1:{name} live"
 
     has_cookies = os.path.exists('cookies.txt')
     ydl_opts = {
@@ -14,6 +13,7 @@ def process_channel(item):
         'verbose': True,
         'skip_download': True,
         'socket_timeout': 15,
+        'format': 'b',  # Best single format for live streams
         'cookiefile': 'cookies.txt' if has_cookies else None,
         'extractor_args': {
             'youtube': {
@@ -26,16 +26,28 @@ def process_channel(item):
     error_reason = "EXTRACTION FAILED OR CHANNEL OFFLINE"
     try:
         with YoutubeDL(ydl_opts) as ydl:
-            print(f"[{name}] Extracting via search: {query}")
+            print(f"[{name}] Extracting: {query}")
             info = ydl.extract_info(query, download=False)
             if info:
                 if 'entries' in info and info['entries']:
                     entry = info['entries'][0]
-                    stream_url = entry.get('url')
-                    if not stream_url and 'id' in entry:
-                        vid_url = f"https://www.youtube.com/watch?v={entry.get('id')}"
-                        sub_info = ydl.extract_info(vid_url, download=False)
-                        stream_url = sub_info.get('url')
+                    vid_url = entry.get('url') or f"https://www.youtube.com/watch?v={entry.get('id')}"
+                    sub_info = ydl.extract_info(vid_url, download=False)
+                    stream_url = sub_info.get('url')
+                    if not stream_url and 'formats' in sub_info:
+                        formats = sub_info.get('formats', [])
+                        for f in reversed(formats):
+                            if f.get('url'):
+                                stream_url = f.get('url')
+                                break
+                else:
+                    stream_url = info.get('url')
+                    if not stream_url and 'formats' in info:
+                        formats = info.get('formats', [])
+                        for f in reversed(formats):
+                            if f.get('url'):
+                                stream_url = f.get('url')
+                                break
     except Exception as e:
         error_reason = str(e)
         print(f"[{name}] Failed: {e}")
