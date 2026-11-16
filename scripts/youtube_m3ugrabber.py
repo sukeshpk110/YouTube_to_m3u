@@ -17,12 +17,16 @@ for name, yt_url in channels.items():
             "yt-dlp",
             "-g",
             "--cookies", "cookies.txt",
-            "--extractor-args", "youtube:player_client=web,android",
-            "-f", "best[height<=720][vcodec^=avc1][acodec^=mp4a]/best[height<=720][protocol*=m3u8]/best[height<=720]",
+            "--extractor-args", "youtube:player_client=web,tv_embedded",
+            "-f", "95/22/best[height<=720][vcodec^=avc1]/best[height<=720]",
             yt_url
         ]
         
-        result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+        result = subprocess.run(cmd, capture_output=True, text=True)
+        if result.returncode != 0:
+            print(f"yt-dlp error for {name}:\n{result.stderr}")
+            continue
+
         stream_url = result.stdout.strip().split("\n")[0]
         
         if stream_url:
