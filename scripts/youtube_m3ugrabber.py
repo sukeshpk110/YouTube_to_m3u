@@ -10,6 +10,7 @@ def process_channel(item):
     has_cookies = os.path.exists('cookies.txt')
     cookie_size = os.path.getsize('cookies.txt') if has_cookies else 0
 
+    # Use mweb client to bypass desktop web PO token / JS challenge blocks
     ydl_opts = {
         'quiet': False,
         'verbose': True,
@@ -18,7 +19,7 @@ def process_channel(item):
         'cookiefile': 'cookies.txt' if has_cookies and cookie_size > 0 else None,
         'extractor_args': {
             'youtube': {
-                'player_client': ['web']
+                'player_client': ['mweb', 'android']
             }
         }
     }
