@@ -8,16 +8,16 @@ def process_channel(item):
     query = f"ytsearch1:{name} live"
 
     has_cookies = os.path.exists('cookies.txt')
+    # Use android player client to bypass web format restrictions on cloud runners
     ydl_opts = {
         'quiet': False,
         'verbose': True,
         'skip_download': True,
-        'socket_timeout': 15,
-        'format': 'b',  # Best single format for live streams
+        'socket_timeout': 20,
         'cookiefile': 'cookies.txt' if has_cookies else None,
         'extractor_args': {
             'youtube': {
-                'player_client': ['android', 'web']
+                'player_client': ['android']
             }
         }
     }
@@ -26,28 +26,23 @@ def process_channel(item):
     error_reason = "EXTRACTION FAILED OR CHANNEL OFFLINE"
     try:
         with YoutubeDL(ydl_opts) as ydl:
-            print(f"[{name}] Extracting: {query}")
+            print(f"[{name}] Searching: {query}")
             info = ydl.extract_info(query, download=False)
             if info:
-                if 'entries' in info and info['entries']:
-                    entry = info['entries'][0]
+                entries = info.get('entries', [])
+                if entries:
+                    entry = entries[0]
                     vid_url = entry.get('url') or f"https://www.youtube.com/watch?v={entry.get('id')}"
                     sub_info = ydl.extract_info(vid_url, download=False)
-                    stream_url = sub_info.get('url')
-                    if not stream_url and 'formats' in sub_info:
-                        formats = sub_info.get('formats', [])
-                        for f in reversed(formats):
-                            if f.get('url'):
-                                stream_url = f.get('url')
-                                break
-                else:
-                    stream_url = info.get('url')
-                    if not stream_url and 'formats' in info:
-                        formats = info.get('formats', [])
-                        for f in reversed(formats):
-                            if f.get('url'):
-                                stream_url = f.get('url')
-                                break
+                    if sub_info:
+                        stream_url = sub_info.get('url')
+                        if not stream_url and 'formats' in sub_info:
+                            for f in sub_info['formats']:
+                                if f.get('url') and ('m3u8' in f.get('format_id', '') or f.get('protocol') in ['m3u8_native', 'https']):
+                                    stream_url = f.get('url')
+                                    break
+                            if not stream_url and sub_info['formats']:
+                                stream_url = sub_info['formats'][-1].get('url')
     except Exception as e:
         error_reason = str(e)
         print(f"[{name}] Failed: {e}")
