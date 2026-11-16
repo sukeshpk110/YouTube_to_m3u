@@ -1,130 +1,65 @@
+import subprocess
 import os
-import re
-from concurrent.futures import ThreadPoolExecutor
-from yt_dlp import YoutubeDL
 
-def process_channel(item):
-    name, data = item
-    raw_query = data['query']
+# Define your 3 Malayalam news channels
+CHANNELS = [
+    {
+        "name": "Kerala Vision News 24x7",
+        "url": "https://www.youtube.com/@keralavisionnews24x7/live",
+        "tvg_id": "KeralaVisionNews.in",
+    },
+    {
+        "name": "Kannur Vision News",
+        "url": "https://www.youtube.com/@KannurVisionOnlinenews/live",
+        "tvg_id": "KannurVisionNews.in",
+    },
+    {
+        "name": "Amrita News",
+        "url": "https://www.youtube.com/@AmritaNews/live",
+        "tvg_id": "AmritaNews.in",
+    },
+]
+
+def get_live_url(youtube_url):
+    try:
+        # Use yt-dlp to extract the direct live stream link
+        cmd = [
+            "yt-dlp",
+            "-g",
+            "--extractor-args", "youtube:player_client=web_safari,ios",
+            "-f", "best[protocol*=m3u8]/best/bestvideo+bestaudio",
+            youtube_url,
+        ]
+        result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+        links = result.stdout.strip().splitlines()
+        return links[0] if links else None
+    except Exception as e:
+        print(f"Error extracting {youtube_url}: {e}")
+        return None
+
+def generate_m3u():
+    m3u_content = "#EXTM3U\n\n"
     
-    if raw_query.startswith("http"):
-        query = raw_query
-    elif raw_query.startswith("@"):
-        query = f"https://www.youtube.com/{raw_query}/live"
-    elif raw_query.startswith("UC"):
-        query = f"https://www.youtube.com/channel/{raw_query}/live"
-    else:
-        query = f"https://www.youtube.com/@{raw_query.replace(' ', '')}/live"
+    for channel in CHANNELS:
+        print(f"Processing {channel['name']}...")
+        stream_url = get_live_url(channel["url"])
+        
+        if stream_url:
+            m3u_content += f"#EXTINF:-1 tvg-id=\"{channel['tvg_id']}\" tvg-name=\"{channel['name']}\" group-title=\"Malayalam News\",{channel['name']}\n"
+            m3u_content += f"{stream_url}\n\n"
+            print(f"Successfully grabbed live link for {channel['name']}")
+        else:
+            print(f"Could not grab live link for {channel['name']} (Channel might be offline)")
 
-    has_cookies = os.path.exists('cookies.txt')
-    cookie_size = os.path.getsize('cookies.txt') if has_cookies else 0
-
-    ydl_opts = {
-        'quiet': False,
-        'verbose': True,
-        'skip_download': True,
-        'socket_timeout': 20,
-        'cookiefile': 'cookies.txt' if has_cookies and cookie_size > 0 else None,
-        'extractor_args': {
-            'youtube': {
-                'player_client': ['web', 'android']
-            }
-        }
-    }
+    # Save to youtube.m3u and channels/ folder
+    os.makedirs("channels", exist_ok=True)
+    with open("youtube.m3u", "w", encoding="utf-8") as f:
+        f.write(m3u_content)
     
-    stream_url = None
-    error_reason = "EXTRACTION FAILED OR CHANNEL OFFLINE"
-    queries = [query, f"ytsearch1:{name} live"]
+    with open("channels/malayalam_news.m3u", "w", encoding="utf-8") as f:
+        f.write(m3u_content)
 
-    with YoutubeDL(ydl_opts) as ydl:
-        for q in queries:
-            try:
-                print(f"[{name}] Trying query/URL: {q}")
-                info = ydl.extract_info(q, download=False)
-                if not info:
-                    continue
-                
-                entry = info['entries'][0] if ('entries' in info and info['entries']) else info
-                stream_url = entry.get('url')
-                
-                if not stream_url and 'id' in entry:
-                    vid_url = f"https://www.youtube.com/watch?v={entry.get('id')}"
-                    sub_info = ydl.extract_info(vid_url, download=False)
-                    if sub_info:
-                        stream_url = sub_info.get('url')
-                        if not stream_url and 'formats' in sub_info:
-                            for f in reversed(sub_info.get('formats', [])):
-                                if f.get('url'):
-                                    stream_url = f.get('url')
-                                    break
-                elif not stream_url and 'formats' in entry:
-                    for f in reversed(entry.get('formats', [])):
-                        if f.get('url'):
-                            stream_url = f.get('url')
-                            break
-                            
-                if stream_url:
-                    break
-            except Exception as e:
-                error_reason = str(e)
-                print(f"[{name}] Failed with {q}: {e}")
-                continue
-
-    os.makedirs(os.path.dirname(data["file"]), exist_ok=True)
-    if stream_url:
-        content = f'#EXTM3U\n#EXTINF:-1 group-title="{data["group"]}" tvg-logo="" tvg-id="", {name}\n{stream_url}\n'
-        print(f"[{name}] Success")
-    else:
-        content = f'#EXTM3U\n#EXTINF:-1 group-title="{data["group"]}" tvg-logo="" tvg-id="", {name}\n# ERROR: {error_reason}\n'
-        print(f"[{name}] Wrote failure marker")
-
-    with open(data["file"], 'w', encoding='utf-8') as f:
-        f.write(content)
-
-def main():
-    config_path = "youtube_channel_info.txt"
-    channels = {}
-
-    if os.path.exists(config_path):
-        with open(config_path, 'r', encoding='utf-8') as f:
-            for line in f:
-                line = line.strip()
-                if line and not line.startswith("~~") and not line.startswith("#"):
-                    parts = [p.strip() for p in line.split("|")]
-                    if len(parts) >= 2:
-                        name = parts[0]
-                        query_term = parts[1]
-                        group = parts[2] if len(parts) > 2 else "Malayalam News"
-                    elif len(parts) == 1:
-                        name = parts[0]
-                        query_term = name
-                        group = "Malayalam News"
-                    else:
-                        continue
-                    
-                    slug = re.sub(r'[^a-z0-9]+', '_', name.lower()).strip('_')
-                    channels[name] = {
-                        "query": query_term,
-                        "file": f"channels/{slug}.m3u",
-                        "group": group
-                    }
-
-    with ThreadPoolExecutor(max_workers=6) as executor:
-        executor.map(process_channel, channels.items())
-
-    master_lines = ["#EXTM3U"]
-    for name, data in channels.items():
-        if os.path.exists(data["file"]):
-            with open(data["file"], 'r', encoding='utf-8') as f:
-                for line in f:
-                    line_str = line.strip()
-                    if line_str and line_str != "#EXTM3U":
-                        master_lines.append(line_str)
-
-    with open("youtube.m3u", 'w', encoding='utf-8') as f:
-        f.write("\n".join(master_lines) + "\n")
-
-    print("All channel playlists generated successfully!")
+    print("M3U generation complete!")
 
 if __name__ == "__main__":
-    main()
+    generate_m3u()
