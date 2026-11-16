@@ -2,9 +2,8 @@ name: M3U Generator
 
 on:
   schedule:
-    - cron: '0 */3 * * *' # Runs every 3 hours
-  workflow_dispatch:      # Allows manual trigger
-
+    - cron: '0 * * * *' # Runs every hour to keep tokens fresh
+  workflow_dispatch:
 jobs:
   build:
     runs-on: ubuntu-latest
