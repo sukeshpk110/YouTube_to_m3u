@@ -16,8 +16,9 @@ for name, yt_url in channels.items():
         cmd = [
             "yt-dlp",
             "-g",
-            "--extractor-args", "youtube:player_client=ios",
-            "-f", "95/94/best[height<=720][protocol*=m3u8]",
+            "--cookies", "cookies.txt",
+            "--extractor-args", "youtube:player_client=web",
+            "-f", "95/94/93",
             yt_url
         ]
         
