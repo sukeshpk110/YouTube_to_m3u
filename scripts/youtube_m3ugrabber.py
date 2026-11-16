@@ -7,28 +7,18 @@ def process_channel(item):
     name, data = item
     raw_query = data['query']
     
-    # Build fallback query list to try both direct live URLs and search
-    queries = []
-    if raw_query.startswith("http"):
-        queries.append(raw_query)
-    elif raw_query.startswith("@"):
-        queries.append(f"https://www.youtube.com/{raw_query}/live")
-        queries.append(f"ytsearch1:{name} live")
-    elif raw_query.startswith("UC"):
-        queries.append(f"https://www.youtube.com/channel/{raw_query}/live")
-        queries.append(f"ytsearch1:{name} live")
-    else:
-        queries.append(f"https://www.youtube.com/@{raw_query.replace(' ', '')}/live")
-        queries.append(f"ytsearch1:{name} live")
+    query = f"ytsearch1:{name} live"
 
     has_cookies = os.path.exists('cookies.txt')
-    # NO format option specified so yt-dlp returns the direct live stream URL safely
+    cookie_size = os.path.getsize('cookies.txt') if has_cookies else 0
+    print(f"[{name}] cookies.txt exists: {has_cookies}, size: {cookie_size} bytes")
+
     ydl_opts = {
         'quiet': False,
         'verbose': True,
         'skip_download': True,
         'socket_timeout': 20,
-        'cookiefile': 'cookies.txt' if has_cookies else None,
+        'cookiefile': 'cookies.txt' if has_cookies and cookie_size > 0 else None,
         'extractor_args': {
             'youtube': {
                 'player_client': ['android', 'web']
@@ -39,42 +29,26 @@ def process_channel(item):
     stream_url = None
     error_reason = "EXTRACTION FAILED OR CHANNEL OFFLINE"
     
-    with YoutubeDL(ydl_opts) as ydl:
-        for query in queries:
-            try:
-                print(f"[{name}] Trying: {query}")
-                info = ydl.extract_info(query, download=False)
-                if not info:
-                    continue
-                
-                if 'entries' in info and info['entries']:
-                    entry = info['entries'][0]
-                    vid_id = entry.get('id')
-                    if vid_id:
-                        vid_url = f"https://www.youtube.com/watch?v={vid_id}"
-                        sub_info = ydl.extract_info(vid_url, download=False)
-                        if sub_info:
-                            stream_url = sub_info.get('url')
-                            if not stream_url and 'formats' in sub_info:
-                                for f in reversed(sub_info.get('formats', [])):
-                                    if f.get('url'):
-                                        stream_url = f.get('url')
-                                        break
-                            if stream_url:
-                                break
-                else:
-                    stream_url = info.get('url')
-                    if not stream_url and 'formats' in info:
-                        for f in reversed(info.get('formats', [])):
-                            if f.get('url'):
-                                stream_url = f.get('url')
-                                break
-                    if stream_url:
-                        break
-            except Exception as e:
-                error_reason = str(e)
-                print(f"[{name}] Query failed: {e}")
-                continue
+    try:
+        with YoutubeDL(ydl_opts) as ydl:
+            print(f"[{name}] Searching: {query}")
+            info = ydl.extract_info(query, download=False)
+            if info and 'entries' in info and info['entries']:
+                entry = info['entries'][0]
+                vid_id = entry.get('id')
+                if vid_id:
+                    vid_url = f"https://www.youtube.com/watch?v={vid_id}"
+                    sub_info = ydl.extract_info(vid_url, download=False)
+                    if sub_info:
+                        stream_url = sub_info.get('url')
+                        if not stream_url and 'formats' in sub_info:
+                            for f in reversed(sub_info.get('formats', [])):
+                                if f.get('url'):
+                                    stream_url = f.get('url')
+                                    break
+    except Exception as e:
+        error_reason = str(e)
+        print(f"[{name}] Failed: {e}")
 
     os.makedirs(os.path.dirname(data["file"]), exist_ok=True)
     if stream_url:
