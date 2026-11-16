@@ -5,7 +5,6 @@ from yt_dlp import YoutubeDL
 
 def process_channel(item):
     name, data = item
-    # Use ytsearch1 to bypass cloud IP blocks on direct /live pages
     query = f"ytsearch1:{name} live"
 
     has_cookies = os.path.exists('cookies.txt')
@@ -24,6 +23,7 @@ def process_channel(item):
     }
     
     stream_url = None
+    error_reason = "EXTRACTION FAILED OR CHANNEL OFFLINE"
     try:
         with YoutubeDL(ydl_opts) as ydl:
             print(f"[{name}] Searching: {query}")
@@ -34,6 +34,7 @@ def process_channel(item):
                 sub_info = ydl.extract_info(vid_url, download=False)
                 stream_url = sub_info.get('url')
     except Exception as e:
+        error_reason = str(e)
         print(f"[{name}] Failed: {e}")
 
     os.makedirs(os.path.dirname(data["file"]), exist_ok=True)
@@ -41,7 +42,7 @@ def process_channel(item):
         content = f'#EXTM3U\n#EXTINF:-1 group-title="{data["group"]}" tvg-logo="" tvg-id="", {name}\n{stream_url}\n'
         print(f"[{name}] Success")
     else:
-        content = f'#EXTM3U\n#EXTINF:-1 group-title="{data["group"]}" tvg-logo="" tvg-id="", {name}\n# ERROR: EXTRACTION FAILED OR CHANNEL OFFLINE\n'
+        content = f'#EXTM3U\n#EXTINF:-1 group-title="{data["group"]}" tvg-logo="" tvg-id="", {name}\n# ERROR: {error_reason}\n'
         print(f"[{name}] Wrote failure marker")
 
     with open(data["file"], 'w', encoding='utf-8') as f:
