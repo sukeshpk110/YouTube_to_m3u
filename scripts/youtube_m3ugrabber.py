@@ -5,18 +5,9 @@ from yt_dlp import YoutubeDL
 
 def process_channel(item):
     name, data = item
-    raw_query = data['query']
-    
-    if raw_query.startswith("http"):
-        query = raw_query
-    elif raw_query.startswith("@"):
-        query = f"https://www.youtube.com/{raw_query}/live"
-    elif raw_query.startswith("UC"):
-        query = f"https://www.youtube.com/channel/{raw_query}/live"
-    else:
-        query = f"https://www.youtube.com/@{raw_query.replace(' ', '')}/live"
+    query = f"ytsearch1:{name} live"
 
-    # Omit cookies for public live streams to prevent cloud IP restrictions & format errors
+    # Use iOS and Android clients without cookies to bypass cloud IP blocks and JS challenges
     ydl_opts = {
         'quiet': False,
         'verbose': True,
@@ -25,7 +16,7 @@ def process_channel(item):
         'cookiefile': None,
         'extractor_args': {
             'youtube': {
-                'player_client': ['android', 'web']
+                'player_client': ['ios', 'android']
             }
         }
     }
@@ -33,45 +24,24 @@ def process_channel(item):
     stream_url = None
     error_reason = "EXTRACTION FAILED OR CHANNEL OFFLINE"
     
-    # Try direct live URL first, then search fallback
-    queries = [query, f"ytsearch1:{name} live"]
-
-    with YoutubeDL(ydl_opts) as ydl:
-        for q in queries:
-            try:
-                print(f"[{name}] Trying: {q}")
-                info = ydl.extract_info(q, download=False)
-                if not info:
-                    continue
-                
-                if 'entries' in info and info['entries']:
-                    entry = info['entries'][0]
-                    vid_id = entry.get('id')
-                    if vid_id:
-                        vid_url = f"https://www.youtube.com/watch?v={vid_id}"
-                        sub_info = ydl.extract_info(vid_url, download=False)
-                        if sub_info:
-                            stream_url = sub_info.get('url')
-                            if not stream_url and 'formats' in sub_info:
-                                for f in reversed(sub_info.get('formats', [])):
-                                    if f.get('url'):
-                                        stream_url = f.get('url')
-                                        break
-                            if stream_url:
-                                break
-                else:
-                    stream_url = info.get('url')
-                    if not stream_url and 'formats' in info:
-                        for f in reversed(info.get('formats', [])):
+    try:
+        with YoutubeDL(ydl_opts) as ydl:
+            print(f"[{name}] Searching: {query}")
+            info = ydl.extract_info(query, download=False)
+            if info and 'entries' in info and info['entries']:
+                entry = info['entries'][0]
+                vid_url = entry.get('url') or f"https://www.youtube.com/watch?v={entry.get('id')}"
+                sub_info = ydl.extract_info(vid_url, download=False)
+                if sub_info:
+                    stream_url = sub_info.get('url')
+                    if not stream_url and 'formats' in sub_info:
+                        for f in reversed(sub_info.get('formats', [])):
                             if f.get('url'):
                                 stream_url = f.get('url')
                                 break
-                    if stream_url:
-                        break
-            except Exception as e:
-                error_reason = str(e)
-                print(f"[{name}] Query failed: {e}")
-                continue
+    except Exception as e:
+        error_reason = str(e)
+        print(f"[{name}] Failed: {e}")
 
     os.makedirs(os.path.dirname(data["file"]), exist_ok=True)
     if stream_url:
