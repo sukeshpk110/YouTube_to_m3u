@@ -5,13 +5,10 @@ from yt_dlp import YoutubeDL
 
 def process_channel(item):
     name, data = item
-    raw_query = data['query']
-    
     query = f"ytsearch1:{name} live"
 
     has_cookies = os.path.exists('cookies.txt')
     cookie_size = os.path.getsize('cookies.txt') if has_cookies else 0
-    print(f"[{name}] cookies.txt exists: {has_cookies}, size: {cookie_size} bytes")
 
     ydl_opts = {
         'quiet': False,
@@ -21,7 +18,7 @@ def process_channel(item):
         'cookiefile': 'cookies.txt' if has_cookies and cookie_size > 0 else None,
         'extractor_args': {
             'youtube': {
-                'player_client': ['android', 'web']
+                'player_client': ['web']
             }
         }
     }
