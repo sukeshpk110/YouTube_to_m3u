@@ -5,10 +5,20 @@ from yt_dlp import YoutubeDL
 
 def process_channel(item):
     name, data = item
-    query = f"ytsearch1:{name} live"
+    raw_query = data['query']
+    
+    if raw_query.startswith("http"):
+        query = raw_query
+    elif raw_query.startswith("UC"):
+        query = f"https://www.youtube.com/channel/{raw_query}/live"
+    elif raw_query.startswith("@"):
+        query = f"https://www.youtube.com/{raw_query}/live"
+    else:
+        query = f"https://www.youtube.com/@{raw_query.replace(' ', '')}/live"
 
     has_cookies = os.path.exists('cookies.txt')
     ydl_opts = {
+        'format': 'best',
         'quiet': False,
         'verbose': True,
         'skip_download': True,
@@ -25,13 +35,14 @@ def process_channel(item):
     error_reason = "EXTRACTION FAILED OR CHANNEL OFFLINE"
     try:
         with YoutubeDL(ydl_opts) as ydl:
-            print(f"[{name}] Searching: {query}")
+            print(f"[{name}] Extracting live URL from: {query}")
             info = ydl.extract_info(query, download=False)
-            if 'entries' in info and info['entries']:
-                entry = info['entries'][0]
-                vid_url = entry.get('url') or f"https://www.youtube.com/watch?v={entry.get('id')}"
-                sub_info = ydl.extract_info(vid_url, download=False)
-                stream_url = sub_info.get('url')
+            if info:
+                if 'entries' in info and info['entries']:
+                    entry = info['entries'][0]
+                    stream_url = entry.get('url')
+                else:
+                    stream_url = info.get('url')
     except Exception as e:
         error_reason = str(e)
         print(f"[{name}] Failed: {e}")
@@ -57,14 +68,23 @@ def main():
                 line = line.strip()
                 if line and not line.startswith("~~") and not line.startswith("#"):
                     parts = [p.strip() for p in line.split("|")]
-                    if len(parts) >= 1:
+                    if len(parts) >= 2:
                         name = parts[0]
+                        query_term = parts[1]
                         group = parts[2] if len(parts) > 2 else "Malayalam News"
-                        slug = re.sub(r'[^a-z0-9]+', '_', name.lower()).strip('_')
-                        channels[name] = {
-                            "file": f"channels/{slug}.m3u",
-                            "group": group
-                        }
+                    elif len(parts) == 1:
+                        name = parts[0]
+                        query_term = name
+                        group = "Malayalam News"
+                    else:
+                        continue
+                    
+                    slug = re.sub(r'[^a-z0-9]+', '_', name.lower()).strip('_')
+                    channels[name] = {
+                        "query": query_term,
+                        "file": f"channels/{slug}.m3u",
+                        "group": group
+                    }
 
     with ThreadPoolExecutor(max_workers=6) as executor:
         executor.map(process_channel, channels.items())
