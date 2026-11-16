@@ -19,7 +19,8 @@ for name, yt_url in channels.items():
             "-g",
             "--cookies", "cookies.txt",
             "--extractor-args", "youtube:player_client=ios,web_safari",
-            yt_url
+            "-f", "best[vcodec^=avc1][acodec^=mp4a]/best[ext=mp4]/best",
+            youtube_url,
         ]
         
         result = subprocess.run(cmd, capture_output=True, text=True, check=True)
