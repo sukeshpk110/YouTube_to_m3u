@@ -27,8 +27,9 @@ def get_live_url(youtube_url):
         cmd = [
             "yt-dlp",
             "-g",
-            "--extractor-args", "youtube:player_client=web_safari,ios",
-            "-f", "b[vcodec^=avc1][acodec^=mp4a]/best[ext=mp4]/best",
+            "--cookies", "cookies.txt",
+            "--extractor-args", "youtube:player_client=ios,web_safari",
+            "-f", "best[protocol*=m3u8]/best",
             youtube_url,
         ]
         result = subprocess.run(cmd, capture_output=True, text=True, check=True)
