@@ -14,12 +14,12 @@ master_playlist = "#EXTM3U\n"
 for name, yt_url in channels.items():
     try:
         print(f"Extracting stream for {name}...")
-        cmd = [
+       cmd = [
             "yt-dlp",
             "-g",
             "--cookies", "cookies.txt",
-            "--extractor-args", "youtube:player_client=ios,web_safari",
-            "-f", "best[vcodec^=avc1][acodec^=mp4a]/best[ext=mp4]/best",
+            "--extractor-args", "youtube:player_client=web,android",
+            "-f", "best[height<=720][vcodec^=avc1][acodec^=mp4a]/best[height<=720][protocol*=m3u8]/best[height<=720]",
             youtube_url,
         ]
         
