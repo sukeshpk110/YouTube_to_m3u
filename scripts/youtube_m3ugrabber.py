@@ -1,7 +1,31 @@
 import os
 import re
+import urllib.request
 from concurrent.futures import ThreadPoolExecutor
 from yt_dlp import YoutubeDL
+
+# Put your other M3U playlist URL here (raw link)
+EXTERNAL_M3U_URL = "http://m3u4u.com/m3u/5z3endj9qzupzkr4nqpk"
+
+def fetch_external_playlist(url):
+    """Downloads an external M3U playlist from a URL."""
+    if not url or "example.com" in url:
+        return []
+    try:
+        print(f"Fetching external playlist from: {url}")
+        req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+        with urllib.request.urlopen(req, timeout=15) as response:
+            content = response.read().decode('utf-8', errors='ignore')
+            lines = []
+            for line in content.splitlines():
+                line_str = line.strip()
+                # Skip header lines from the external file to avoid duplication
+                if line_str and line_str != "#EXTM3U":
+                    lines.append(line_str)
+            return lines
+    except Exception as e:
+        print(f"Failed to fetch external playlist: {e}")
+        return []
 
 def process_channel(item):
     name, data = item
@@ -109,10 +133,14 @@ def main():
                         "group": group
                     }
 
+    # Run thread pool to update local YouTube channel files
     with ThreadPoolExecutor(max_workers=6) as executor:
         executor.map(process_channel, channels.items())
 
+    # Build the combined master playlist
     master_lines = ["#EXTM3U"]
+    
+    # 1. Add generated YouTube channels
     for name, data in channels.items():
         if os.path.exists(data["file"]):
             with open(data["file"], 'r', encoding='utf-8') as f:
@@ -121,10 +149,16 @@ def main():
                     if line_str and line_str != "#EXTM3U":
                         master_lines.append(line_str)
 
+    # 2. Append external playlist lines if URL is provided
+    external_lines = fetch_external_playlist(EXTERNAL_M3U_URL)
+    if external_lines:
+        master_lines.extend(external_lines)
+
+    # Write out the final unified master playlist
     with open("youtube.m3u", 'w', encoding='utf-8') as f:
         f.write("\n".join(master_lines) + "\n")
 
-    print("All channel playlists generated successfully!")
+    print("Master playlist successfully generated and merged!")
 
 if __name__ == "__main__":
     main()
