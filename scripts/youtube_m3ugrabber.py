@@ -1,72 +1,44 @@
-import subprocess
 import os
+import subprocess
 
-CHANNELS = [
-    {
-        "filename": "kerala_vision.m3u",
-        "name": "Kerala Vision News 24x7",
-        "url": "https://www.youtube.com/@keralavisionnews24x7/live",
-        "tvg_id": "KeralaVisionNews.in",
-    },
-    {
-        "filename": "kannur_vision.m3u",
-        "name": "Kannur Vision News",
-        "url": "https://www.youtube.com/@KannurVisionOnlinenews/live",
-        "tvg_id": "KannurVisionNews.in",
-    },
-    {
-        "filename": "amrita_news.m3u",
-        "name": "Amrita News",
-        "url": "https://www.youtube.com/@AmritaNews/live",
-        "tvg_id": "AmritaNews.in",
-    },
-]
+# Define your channels
+channels = {
+    "amrita_news": "https://www.youtube.com/@AmritaNews/live",
+    "kerala_vision": "https://www.youtube.com/@keralavisionnews24x7/live",
+    "kannur_vision": "https://www.youtube.com/@KannurVisionOnlinenews/live"
+}
 
-def get_live_url(youtube_url):
+os.makedirs("channels", exist_ok=True)
+master_playlist = "#EXTM3U\n"
+
+for name, yt_url in channels.items():
     try:
+        print(f"Extracting stream for {name}...")
         cmd = [
             "yt-dlp",
             "-g",
             "--cookies", "cookies.txt",
-            "--extractor-args", "youtube:player_client=android,web",
-            "-f", "b/best",
-            youtube_url,
+            "--extractor-args", "youtube:player_client=ios,web_safari",
+            yt_url
         ]
+        
         result = subprocess.run(cmd, capture_output=True, text=True, check=True)
-        links = result.stdout.strip().splitlines()
-        return links[0] if links else None
-    except Exception as e:
-        print(f"Error extracting {youtube_url}: {e}")
-        return None
-
-def generate_m3u():
-    os.makedirs("channels", exist_ok=True)
-    master_content = "#EXTM3U\n\n"
-    
-    for channel in CHANNELS:
-        print(f"Processing {channel['name']}...")
-        stream_url = get_live_url(channel["url"])
+        stream_url = result.stdout.strip().split("\n")[0]
         
         if stream_url:
-            channel_content = "#EXTM3U\n\n"
-            entry = f"#EXTINF:-1 tvg-id=\"{channel['tvg_id']}\" tvg-name=\"{channel['name']}\" group-title=\"Malayalam News\",{channel['name']}\n{stream_url}\n\n"
-            
-            channel_content += entry
-            master_content += entry
-            
-            # Save individual channel file
-            with open(os.path.join("channels", channel["filename"]), "w", encoding="utf-8") as f:
+            # Create individual channel file
+            channel_content = f"#EXTM3U\n#EXTINF:-1,{name.replace('_', ' ').title()}\n{stream_url}\n"
+            with open(f"channels/{name}.m3u", "w") as f:
                 f.write(channel_content)
-                
-            print(f"Successfully grabbed live link for {channel['name']}")
-        else:
-            print(f"Could not grab live link for {channel['name']}")
+            
+            # Append to master playlist
+            master_playlist += f"#EXTINF:-1,{name.replace('_', ' ').title()}\n{stream_url}\n"
+            print(f"Successfully extracted {name}")
+    except Exception as e:
+        print(f"Failed to extract {name}: {e}")
 
-    # Save master playlist
-    with open("youtube.m3u", "w", encoding="utf-8") as f:
-        f.write(master_content)
+# Save master playlist
+with open("youtube.m3u", "w") as f:
+    f.write(master_playlist)
 
-    print("All M3U playlists generated successfully!")
-
-if __name__ == "__main__":
-    generate_m3u()
+print("Playlist generation complete.")
