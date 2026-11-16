@@ -5,12 +5,21 @@ from yt_dlp import YoutubeDL
 
 def process_channel(item):
     name, data = item
-    query = f"ytsearch1:{name} live"
+    raw_query = data['query']
+    
+    if raw_query.startswith("http"):
+        query = raw_query
+    elif raw_query.startswith("@"):
+        query = f"https://www.youtube.com/{raw_query}/live"
+    elif raw_query.startswith("UC"):
+        query = f"https://www.youtube.com/channel/{raw_query}/live"
+    else:
+        query = f"https://www.youtube.com/@{raw_query.replace(' ', '')}/live"
 
     has_cookies = os.path.exists('cookies.txt')
     cookie_size = os.path.getsize('cookies.txt') if has_cookies else 0
 
-    # Use mweb client to bypass desktop web PO token / JS challenge blocks
+    # Use tv_embedded client to bypass web PO tokens and JS challenge blocks on live streams
     ydl_opts = {
         'quiet': False,
         'verbose': True,
@@ -19,7 +28,7 @@ def process_channel(item):
         'cookiefile': 'cookies.txt' if has_cookies and cookie_size > 0 else None,
         'extractor_args': {
             'youtube': {
-                'player_client': ['mweb', 'android']
+                'player_client': ['tv_embedded', 'android']
             }
         }
     }
@@ -29,21 +38,24 @@ def process_channel(item):
     
     try:
         with YoutubeDL(ydl_opts) as ydl:
-            print(f"[{name}] Searching: {query}")
+            print(f"[{name}] Extracting live URL from: {query}")
             info = ydl.extract_info(query, download=False)
-            if info and 'entries' in info and info['entries']:
-                entry = info['entries'][0]
-                vid_id = entry.get('id')
-                if vid_id:
-                    vid_url = f"https://www.youtube.com/watch?v={vid_id}"
-                    sub_info = ydl.extract_info(vid_url, download=False)
-                    if sub_info:
-                        stream_url = sub_info.get('url')
-                        if not stream_url and 'formats' in sub_info:
-                            for f in reversed(sub_info.get('formats', [])):
-                                if f.get('url'):
-                                    stream_url = f.get('url')
-                                    break
+            if info:
+                if 'entries' in info and info['entries']:
+                    entry = info['entries'][0]
+                    stream_url = entry.get('url')
+                    if not stream_url and 'id' in entry:
+                        vid_url = f"https://www.youtube.com/watch?v={entry.get('id')}"
+                        sub_info = ydl.extract_info(vid_url, download=False)
+                        if sub_info:
+                            stream_url = sub_info.get('url')
+                else:
+                    stream_url = info.get('url')
+                    if not stream_url and 'formats' in info:
+                        for f in reversed(info.get('formats', [])):
+                            if f.get('url'):
+                                stream_url = f.get('url')
+                                break
     except Exception as e:
         error_reason = str(e)
         print(f"[{name}] Failed: {e}")
