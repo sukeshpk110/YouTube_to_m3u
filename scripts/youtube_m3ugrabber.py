@@ -18,7 +18,6 @@ def process_channel(item):
 
     has_cookies = os.path.exists('cookies.txt')
     ydl_opts = {
-        'format': 'best',
         'quiet': False,
         'verbose': True,
         'skip_download': True,
@@ -41,8 +40,16 @@ def process_channel(item):
                 if 'entries' in info and info['entries']:
                     entry = info['entries'][0]
                     stream_url = entry.get('url')
+                    if not stream_url and 'formats' in entry:
+                        formats = entry.get('formats', [])
+                        if formats:
+                            stream_url = formats[-1].get('url')
                 else:
                     stream_url = info.get('url')
+                    if not stream_url and 'formats' in info:
+                        formats = info.get('formats', [])
+                        if formats:
+                            stream_url = formats[-1].get('url')
     except Exception as e:
         error_reason = str(e)
         print(f"[{name}] Failed: {e}")
