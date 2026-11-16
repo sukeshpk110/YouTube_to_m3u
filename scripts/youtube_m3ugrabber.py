@@ -16,9 +16,8 @@ for name, yt_url in channels.items():
         cmd = [
             "yt-dlp",
             "-g",
-            "--cookies", "cookies.txt",
-            "--extractor-args", "youtube:player_client=web,tv_embedded",
-            "-f", "95/22/best[height<=720][vcodec^=avc1]/best[height<=720]",
+            "--extractor-args", "youtube:player_client=ios",
+            "-f", "95/94/best[height<=720][protocol*=m3u8]",
             yt_url
         ]
         
@@ -30,11 +29,16 @@ for name, yt_url in channels.items():
         stream_url = result.stdout.strip().split("\n")[0]
         
         if stream_url:
-            channel_content = f"#EXTM3U\n#EXTINF:-1,{name.replace('_', ' ').title()}\n{stream_url}\n"
+            title = name.replace("_", " ").title()
+            header = (
+                f"#EXTINF:-1,{title}\n"
+                f"#EXTVLCOPT:http-user-agent=Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15\n"
+                f"#EXTVLCOPT:http-referrer=https://www.youtube.com/\n"
+            )
             with open(f"channels/{name}.m3u", "w") as f:
-                f.write(channel_content)
+                f.write(f"#EXTM3U\n{header}{stream_url}\n")
             
-            master_playlist += f"#EXTINF:-1,{name.replace('_', ' ').title()}\n{stream_url}\n"
+            master_playlist += f"{header}{stream_url}\n"
             print(f"Successfully extracted {name}")
     except Exception as e:
         print(f"Failed to extract {name}: {e}")
