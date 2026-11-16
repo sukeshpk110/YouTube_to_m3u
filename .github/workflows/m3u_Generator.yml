@@ -17,6 +17,11 @@ jobs:
         with:
           python-version: '3.10'
 
+      - name: Set up Node.js (Required for yt-dlp JS challenges)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
@@ -28,8 +33,7 @@ jobs:
 
       - name: Run M3U generator script
         run: |
-          chmod +x autorun.sh
-          ./autorun.sh
+          python scripts/youtube_m3ugrabber.py
 
       - name: Commit and push updated M3U
         run: |
