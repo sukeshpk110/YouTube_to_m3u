@@ -7,16 +7,19 @@ def process_channel(item):
     name, data = item
     query = f"ytsearch1:{name} live"
 
-    # Use iOS and Android clients without cookies to bypass cloud IP blocks and JS challenges
+    has_cookies = os.path.exists('cookies.txt')
+    cookie_size = os.path.getsize('cookies.txt') if has_cookies else 0
+
+    # Re-enable cookies with the web client (Node.js solves the n-challenge automatically)
     ydl_opts = {
         'quiet': False,
         'verbose': True,
         'skip_download': True,
         'socket_timeout': 20,
-        'cookiefile': None,
+        'cookiefile': 'cookies.txt' if has_cookies and cookie_size > 0 else None,
         'extractor_args': {
             'youtube': {
-                'player_client': ['ios', 'android']
+                'player_client': ['web']
             }
         }
     }
