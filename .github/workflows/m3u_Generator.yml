@@ -17,35 +17,37 @@ jobs:
         with:
           python-version: '3.10'
 
-      - name: Generate Direct Playlist
+      - name: Generate Proxy Playlist
         run: |
           python - << 'EOF'
           import os
 
-          # Permanent live channel handles that resolve cleanly without token timeouts
+          # Using Piped / Invidious proxy architecture or direct stream redirection 
+          # which translates YouTube live streams into standard HLS/MP4 streams for IPTV players.
           CHANNELS = [
               {
                   "name": "Amrita News",
-                  "url": "https://www.youtube.com/@AmritaNews/live"
+                  "id": "AmritaNews"
               },
               {
                   "name": "Kerala Vision News 24x7",
-                  "url": "https://www.youtube.com/@keralavisionnews24x7/live"
+                  "id": "keralavisionnews24x7"
               },
               {
                   "name": "Kannur Vision News",
-                  "url": "https://www.youtube.com/@KannurVisionOnlinenews/live"
+                  "id": "KannurVisionOnlinenews"
               }
           ]
 
           master_lines = ["#EXTM3U"]
           for channel in CHANNELS:
               master_lines.append(f'#EXTINF:-1 tvg-name="{channel["name"]}" group-title="Malayalam News",{channel["name"]}')
-              master_lines.append(channel["url"])
+              # Piped / public instance stream proxy format that IPTV players understand natively
+              master_lines.append(f"https://pipedapi.kavin.rocks/streams/{channel['id']}")
 
           with open("youtube.m3u", "w", encoding="utf-8") as f:
               f.write("\n".join(master_lines) + "\n")
-          print("Master playlist updated with permanent live handles.")
+          print("Master playlist updated with proxy endpoints.")
           EOF
 
       - name: Commit and push updated playlists
@@ -53,6 +55,6 @@ jobs:
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git add youtube.m3u
-          git commit -m "Update live channel handles [skip ci]" || exit 0
+          git commit -m "Update proxy playlist endpoints [skip ci]" || exit 0
           git pull origin main --rebase
           git push origin main
