@@ -1,9 +1,10 @@
-name: M3U Generator
+name: Generate M3U Playlists
 
 on:
   schedule:
-    - cron: '0 * * * *' # Runs every hour to keep tokens fresh
-  workflow_dispatch:
+    - cron: '0 */3 * * *' # Runs every 3 hours automatically
+  workflow_dispatch:      # Allows manual trigger from GitHub website
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -16,17 +17,24 @@ jobs:
         with:
           python-version: '3.10'
 
+      - name: Set up Deno (Required for YouTube challenge solver)
+        uses: denoland/setup-deno@v1
+        with:
+          deno-version: v1.x
+
       - name: Install dependencies
         run: |
-          pip install --upgrade pip yt-dlp
+          python -m pip install --upgrade pip
+          pip install yt-dlp
 
-      - name: Run M3U Grabber Script
-        run: python scripts/youtube_m3ugrabber.py
+      - name: Run M3U Generator Script
+        run: |
+          python m3u_generator.py
 
-      - name: Commit and push generated playlists
+      - name: Commit and push updated playlists
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git checkout -- cookies.txt
           git add channels/ youtube.m3u
-          git diff --cached --quiet || (git commit -m "Auto-update IPTV playlists" && git push)
+          git commit -m "Auto-update YouTube live streams [skip ci]" || exit 0
+          git push
