@@ -22,8 +22,9 @@ jobs:
           python - << 'EOF'
           import os
 
-          # Using Piped / Invidious proxy architecture or direct stream redirection 
-          # which translates YouTube live streams into standard HLS/MP4 streams for IPTV players.
+          # Using an alternative, stable public Piped API instance endpoint
+          PIPED_API_BASE = "https://pipedapi.syncpundit.io"
+
           CHANNELS = [
               {
                   "name": "Amrita News",
@@ -42,12 +43,11 @@ jobs:
           master_lines = ["#EXTM3U"]
           for channel in CHANNELS:
               master_lines.append(f'#EXTINF:-1 tvg-name="{channel["name"]}" group-title="Malayalam News",{channel["name"]}')
-              # Piped / public instance stream proxy format that IPTV players understand natively
-              master_lines.append(f"https://pipedapi.kavin.rocks/streams/{channel['id']}")
+              master_lines.append(f"{PIPED_API_BASE}/streams/{channel['id']}")
 
           with open("youtube.m3u", "w", encoding="utf-8") as f:
               f.write("\n".join(master_lines) + "\n")
-          print("Master playlist updated with proxy endpoints.")
+          print("Master playlist updated with alternative proxy endpoints.")
           EOF
 
       - name: Commit and push updated playlists
@@ -55,6 +55,6 @@ jobs:
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git add youtube.m3u
-          git commit -m "Update proxy playlist endpoints [skip ci]" || exit 0
+          git commit -m "Update proxy to alternative instance [skip ci]" || exit 0
           git pull origin main --rebase
           git push origin main
