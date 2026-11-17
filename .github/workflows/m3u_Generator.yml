@@ -59,8 +59,8 @@ jobs:
               print(f"[{channel['name']}] Extracting live stream URL using yt-dlp...")
               cmd = [
                   "yt-dlp", "-g",
-                  "--extractor-args", "youtube:player_client=web",
-                  "-f", "95/94/best[height<=720][vcodec^=avc1]",
+                  "--extractor-args", "youtube:player_client=tv",
+                  "-f", "best",
                   channel["url"]
               ]
               
