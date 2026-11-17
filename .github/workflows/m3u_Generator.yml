@@ -2,7 +2,7 @@ name: Generate M3U Playlists
 
 on:
   schedule:
-    - cron: '0 */3 * * *'
+    - cron: '0 * * * *' # Runs automatically every 1 hour to keep stream tokens fresh
   workflow_dispatch:
 
 jobs:
@@ -25,7 +25,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install yt-dlp
+          pip install --upgrade yt-dlp
 
       - name: Generate and Clean Playlists Inline
         run: |
@@ -59,8 +59,8 @@ jobs:
               print(f"[{channel['name']}] Extracting live stream URL using yt-dlp...")
               cmd = [
                   "yt-dlp", "-g",
-                  "--extractor-args", "youtube:player_client=tv",
-                  "-f", "best",
+                  "--extractor-args", "youtube:player_client=android,web",
+                  "-f", "96/95/94/best",
                   channel["url"]
               ]
               
