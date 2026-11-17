@@ -1,7 +1,7 @@
 #EXTM3U
 #EXTINF:-1 tvg-name="Amrita News" group-title="Malayalam News",Amrita News
-https://pipedapi.kavin.rocks/streams/AmritaNews
+https://pipedapi.syncpundit.io/streams/AmritaNews
 #EXTINF:-1 tvg-name="Kerala Vision News 24x7" group-title="Malayalam News",Kerala Vision News 24x7
-https://pipedapi.kavin.rocks/streams/keralavisionnews24x7
+https://pipedapi.syncpundit.io/streams/keralavisionnews24x7
 #EXTINF:-1 tvg-name="Kannur Vision News" group-title="Malayalam News",Kannur Vision News
-https://pipedapi.kavin.rocks/streams/KannurVisionOnlinenews
+https://pipedapi.syncpundit.io/streams/KannurVisionOnlinenews
