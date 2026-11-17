@@ -1,0 +1,76 @@
+import subprocess
+import urllib.request
+import os
+
+CHANNELS = [
+    {
+        "id": "amrita_news",
+        "name": "Amrita News",
+        "url": "https://www.youtube.com/@AmritaNews/live"
+    },
+    {
+        "id": "kerala_vision",
+        "name": "Kerala Vision News 24x7",
+        "url": "https://www.youtube.com/@keralavisionnews24x7/live"
+    },
+    {
+        "id": "kannur_vision",
+        "name": "Kannur Vision News",
+        "url": "https://www.youtube.com/@KannurVisionOnlinenews/live"
+    }
+]
+
+OUTPUT_DIR = "channels"
+os.makedirs(OUTPUT_DIR, exist_ok=True)
+
+def fetch_and_clean_stream(channel):
+    print(f"[{channel['name']}] Extracting live stream URL using yt-dlp...")
+    cmd = [
+        "yt-dlp", "-g",
+        "--extractor-args", "youtube:player_client=web",
+        "-f", "95/94/best[height<=720][vcodec^=avc1]",
+        channel["url"]
+    ]
+    
+    try:
+        result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+        stream_urls = result.stdout.strip().splitlines()
+        if not stream_urls:
+            print(f"[{channel['name']}] Error: No stream URL returned.")
+            return False
+        
+        raw_url = stream_urls[0]
+        print(f"[{channel['name']}] Downloading and cleaning HLS manifest...")
+        req = urllib.request.Request(raw_url, headers={"User-Agent": "Mozilla/5.0"})
+        manifest_data = urllib.request.urlopen(req, timeout=15).read().decode("utf-8")
+        
+        cleaned_lines = [
+            line for line in manifest_data.splitlines()
+            if not line.startswith("#EXT-X-CUEPOINT") and not line.startswith("#EXT-X-DATERANGE")
+        ]
+        
+        output_path = os.path.join(OUTPUT_DIR, f"{channel['id']}.m3u8")
+        with open(output_path, "w", encoding="utf-8") as f:
+            f.write("\n".join(cleaned_lines) + "\n")
+            
+        print(f"[{channel['name']}] Success! Saved to {output_path}")
+        return True
+    except Exception as e:
+        print(f"[{channel['name']}] Error: {e}")
+        return False
+
+def generate_master_playlist():
+    print("\nGenerating master youtube.m3u playlist...")
+    master_lines = ["#EXTM3U"]
+    for channel in CHANNELS:
+        master_lines.append(f'#EXTINF:-1 tvg-name="{channel["name"]}" group-title="Malayalam News",{channel["name"]}')
+        master_lines.append(f"channels/{channel['id']}.m3u8")
+        
+    with open("youtube.m3u", "w", encoding="utf-8") as f:
+        f.write("\n".join(master_lines) + "\n")
+    print("Master playlist 'youtube.m3u' generated successfully!")
+
+if __name__ == "__main__":
+    for ch in CHANNELS:
+        fetch_and_clean_stream(ch)
+    generate_master_playlist()
