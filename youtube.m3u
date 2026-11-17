@@ -1,7 +1,7 @@
 #EXTM3U
 #EXTINF:-1 tvg-name="Amrita News" group-title="Malayalam News",Amrita News
-channels/amrita_news.m3u8
+https://raw.githubusercontent.com/sukeshpk110/YouTube_to_m3u/refs/heads/main/channels/amrita_news.m3u
 #EXTINF:-1 tvg-name="Kerala Vision News 24x7" group-title="Malayalam News",Kerala Vision News 24x7
-channels/kerala_vision.m3u8
+https://raw.githubusercontent.com/sukeshpk110/YouTube_to_m3u/refs/heads/main/channels/kerala_vision.m3u
 #EXTINF:-1 tvg-name="Kannur Vision News" group-title="Malayalam News",Kannur Vision News
-channels/kannur_vision.m3u8
+https://raw.githubusercontent.com/sukeshpk110/YouTube_to_m3u/refs/heads/main/channels/kannur_vision.m3u
