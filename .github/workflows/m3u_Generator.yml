@@ -29,7 +29,7 @@ jobs:
 
       - name: Run M3U Generator Script
         run: |
-          python m3u_generator.py
+          python youtube_m3ugrabber.py
 
       - name: Commit and push updated playlists
         run: |
